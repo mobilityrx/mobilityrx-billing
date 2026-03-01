@@ -781,6 +781,7 @@
 
 </style>
   <script src="https://apis.google.com/js/api.js" async defer onerror="console.warn('Google API script failed to load')"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer onerror="console.warn('Google Identity Services failed to load')"></script>
 </head>
 <body>
 
@@ -1146,16 +1147,14 @@
 </div><!-- /dashboard -->
 
 <script>
-  // ── GOOGLE DRIVE PICKER ──────────────────────────────────────────
+  // ── GOOGLE DRIVE PICKER (Google Identity Services) ───────────────
 
   let driveApiKey = localStorage.getItem('driveApiKey') || '';
   let driveClientId = localStorage.getItem('driveClientId') || '';
   let driveAccessToken = null;
   let pickerApiLoaded = false;
-  let authApiLoaded = false;
+  let tokenClient = null;
 
-  // Init on load — check if keys exist
-  // Drive init runs when upload screen becomes visible, not on DOMContentLoaded
   function initDriveUI() {
     const setupEl = document.getElementById('api-key-setup');
     if (!setupEl) return;
@@ -1171,6 +1170,7 @@
 
   function setDriveStatus(msg, cls) {
     const el = document.getElementById('drive-status');
+    if (!el) return;
     el.textContent = msg;
     el.className = 'drive-status' + (cls ? ' ' + cls : '');
   }
@@ -1200,28 +1200,44 @@
     if (!driveApiKey || !driveClientId) return;
     try {
       if (typeof gapi === 'undefined') {
-        setDriveStatus('Google API not available — check internet connection', 'error');
+        setDriveStatus('Google API loading — try again in a moment', '');
+        setTimeout(loadPickerApi, 1500);
         return;
       }
       gapi.load('picker', () => { pickerApiLoaded = true; });
-      gapi.load('client:auth2', () => {
+      gapi.load('client', async () => {
         try {
-          gapi.client.init({
-            apiKey: driveApiKey,
-            clientId: driveClientId,
-            scope: 'https://www.googleapis.com/auth/drive.readonly',
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-          }).then(() => {
-            authApiLoaded = true;
-          }).catch(err => {
-            console.error('Drive API init error:', err);
-            setDriveStatus('API setup error — check your keys', 'error');
-          });
-        } catch(e) { console.error('gapi.client.init error:', e); }
+          await gapi.client.init({ apiKey: driveApiKey });
+          await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+          initTokenClient();
+        } catch(e) {
+          console.error('gapi.client.init error:', e);
+          setDriveStatus('API key error — check your API key', 'error');
+        }
       });
     } catch(e) {
       console.error('loadPickerApi error:', e);
     }
+  }
+
+  function initTokenClient() {
+    if (typeof google === 'undefined' || !google.accounts) {
+      setTimeout(initTokenClient, 1000);
+      return;
+    }
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: driveClientId,
+      scope: 'https://www.googleapis.com/auth/drive.readonly',
+      callback: (tokenResponse) => {
+        if (tokenResponse.error) {
+          setDriveStatus('Sign-in failed: ' + tokenResponse.error, 'error');
+          return;
+        }
+        driveAccessToken = tokenResponse.access_token;
+        buildPicker();
+      }
+    });
+    setDriveStatus('✓ Ready — click to load files from Google Drive', 'success');
   }
 
   function openDrivePicker() {
@@ -1230,23 +1246,15 @@
       setDriveStatus('Please complete setup first', 'error');
       return;
     }
-    if (!authApiLoaded || !pickerApiLoaded) {
-      setDriveStatus('Loading Google APIs... please try again in a moment', '');
+    if (!pickerApiLoaded || !tokenClient) {
+      setDriveStatus('Still loading — please try again in a moment', '');
       loadPickerApi();
-      setTimeout(openDrivePicker, 2000);
       return;
     }
-    const authInstance = gapi.auth2.getAuthInstance();
-    if (!authInstance.isSignedIn.get()) {
-      authInstance.signIn().then(user => {
-        driveAccessToken = user.getAuthResponse().access_token;
-        buildPicker();
-      }).catch(err => {
-        setDriveStatus('Sign-in cancelled or failed', 'error');
-      });
-    } else {
-      driveAccessToken = authInstance.currentUser.get().getAuthResponse().access_token;
+    if (driveAccessToken) {
       buildPicker();
+    } else {
+      tokenClient.requestAccessToken({ prompt: 'consent' });
     }
   }
 
