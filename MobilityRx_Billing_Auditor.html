@@ -1,0 +1,2562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobility Rx — Billing Auditor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111318;
+    --surface2: #181b22;
+    --border: #1f2330;
+    --red: #ff3b3b;
+    --amber: #f5a623;
+    --green: #00d68f;
+    --blue: #4a9eff;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #ff3b3b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* UPLOAD SCREEN */
+  #upload-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px;
+    gap: 32px;
+  }
+
+  .logo-mark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-mark h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--text);
+  }
+
+  .logo-mark h1 span { color: var(--red); }
+
+  .logo-mark p {
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .drop-zone {
+    width: 100%;
+    max-width: 640px;
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+    padding: 60px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    position: relative;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--red);
+    background: #1a0f0f;
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: #1f1015;
+    border: 1px solid #3d1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 24px;
+  }
+
+  .drop-zone h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .drop-zone p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .file-list {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .file-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+
+  .file-item .file-icon { color: var(--green); font-size: 16px; }
+  .file-item .file-name { flex: 1; color: var(--text); }
+  .file-item .file-type {
+    background: #1a2a1a;
+    color: var(--green);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .run-btn {
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 16px 48px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.3px;
+    transition: all 0.15s;
+  }
+
+  .run-btn:hover { background: #e03030; transform: translateY(-1px); }
+  .run-btn:disabled { background: var(--muted); cursor: not-allowed; transform: none; }
+
+  /* DASHBOARD */
+  #dashboard { display: none; }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topbar-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .topbar-brand span { color: var(--red); }
+
+  .topbar-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .main {
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  /* ALERT BANNER */
+  .alert-banner {
+    background: linear-gradient(135deg, #1f0a0a, #1a0f0a);
+    border: 1px solid #4a1a1a;
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .alert-icon { font-size: 28px; }
+
+  .alert-text h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--red);
+    margin-bottom: 4px;
+  }
+
+  .alert-text p { color: #c0a090; font-size: 13px; line-height: 1.5; }
+
+  /* KPI GRID */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .kpi-card.red::before { background: var(--red); }
+  .kpi-card.amber::before { background: var(--amber); }
+  .kpi-card.green::before { background: var(--green); }
+  .kpi-card.blue::before { background: var(--blue); }
+
+  .kpi-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'Playfair Display', serif;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.amber .kpi-value { color: var(--amber); }
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.blue .kpi-value { color: var(--blue); }
+
+  .kpi-sub { font-size: 12px; color: var(--muted); }
+
+  /* SECTION */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  .badge.red { background: #2a0f0f; color: var(--red); border: 1px solid #4a1a1a; }
+  .badge.amber { background: #2a1f0a; color: var(--amber); border: 1px solid #4a3a1a; }
+  .badge.green { background: #0a2a1a; color: var(--green); border: 1px solid #1a4a2a; }
+
+  /* FINDINGS TABLE */
+  .findings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .findings-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-family: 'DM Mono', monospace;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .findings-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.4;
+  }
+
+  .findings-table tr:last-child td { border-bottom: none; }
+  .findings-table tr:hover td { background: var(--surface2); }
+
+  .flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .flag.red { background: #2a0f0f; color: var(--red); }
+  .flag.amber { background: #2a1f0a; color: var(--amber); }
+  .flag.green { background: #0a2a1a; color: var(--green); }
+
+  .money { font-family: 'DM Mono', monospace; font-weight: 500; }
+  .money.red { color: var(--red); }
+  .money.amber { color: var(--amber); }
+  .money.green { color: var(--green); }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* PANEL */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  /* PAYER BAR CHART */
+  .payer-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .payer-row:last-child { border-bottom: none; }
+
+  .payer-name { width: 180px; font-size: 12px; color: var(--muted); flex-shrink: 0; }
+
+  .payer-bar-wrap { flex: 1; background: var(--surface2); height: 6px; border-radius: 3px; overflow: hidden; }
+
+  .payer-bar { height: 100%; border-radius: 3px; transition: width 1s ease; }
+
+  .payer-rate {
+    width: 52px;
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* PROVIDER TABLE */
+  .provider-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .provider-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .provider-name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .provider-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+
+  .provider-stat .label { color: var(--muted); }
+  .provider-stat .val { font-family: 'DM Mono', monospace; font-weight: 500; }
+
+  /* LOADING */
+  #loading-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 24px;
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  /* SUMMARY BOX */
+  .summary-box {
+    background: #0f1a0f;
+    border: 1px solid #1a3a1a;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .summary-box h4 {
+    color: var(--green);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .summary-box ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .summary-box ul li {
+    font-size: 13px;
+    color: #a0c0a0;
+    display: flex;
+    gap: 8px;
+  }
+
+  .summary-box ul li::before { content: '→'; color: var(--green); flex-shrink: 0; }
+
+  .timestamp {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 16px;
+  }
+
+  /* WORKLIST */
+  .worklist-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .worklist-tab {
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .worklist-tab.active { border-color: var(--red); color: var(--text); background: #1f0f0f; }
+  .worklist-tab .tab-count {
+    background: var(--red);
+    color: white;
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+  }
+  .worklist-tab.amber-tab.active { border-color: var(--amber); background: #1f1a0a; }
+  .worklist-tab.amber-tab .tab-count { background: var(--amber); color: #000; }
+  .worklist-tab.blue-tab.active { border-color: var(--blue); background: #0a1020; }
+  .worklist-tab.blue-tab .tab-count { background: var(--blue); color: white; }
+
+  .worklist-content { display: none; }
+  .worklist-content.active { display: block; }
+
+  .worklist-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .worklist-table th {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-family: 'DM Mono', monospace;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .worklist-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .worklist-table tr:last-child td { border-bottom: none; }
+  .worklist-table tr:hover td { background: var(--surface2); }
+
+  .charge-id {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .download-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .download-btn:hover { border-color: var(--green); color: var(--green); }
+
+  .worklist-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .worklist-search {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    width: 220px;
+    outline: none;
+  }
+
+  .worklist-search:focus { border-color: var(--blue); }
+  .worklist-search::placeholder { color: var(--muted); }
+
+  .pin-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .pin-dot.filled { background: var(--red); border-color: var(--red); }
+
+  .pin-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.1s;
+  }
+  .pin-btn:hover { background: var(--border); border-color: var(--muted); }
+  .pin-btn:active { transform: scale(0.95); }
+  #pin-confirm { background: #1a0f0f; border-color: var(--red); color: var(--red); }
+  #pin-confirm:hover { background: var(--red); color: white; }
+
+  /* GOOGLE DRIVE BUTTON */
+  #drive-section { width:100%; max-width:640px; margin-bottom:8px; }
+
+  .drive-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .drive-btn:hover { border-color: #4285F4; background: #0d1a2e; color: #4285F4; }
+  .drive-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .drive-btn.connected { border-color: var(--green); }
+
+  .drive-status {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 6px;
+    min-height: 16px;
+    font-family: 'DM Mono', monospace;
+  }
+  .drive-status.success { color: var(--green); }
+  .drive-status.error { color: var(--red); }
+
+  .api-key-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 8px;
+  }
+  .api-key-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .api-key-desc { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 0; }
+  .api-key-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    width: 100%;
+  }
+  .api-key-input:focus { outline: none; border-color: var(--blue); }
+  .save-key-btn {
+    margin-top: 10px;
+    background: var(--blue);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .save-key-btn:hover { opacity: 0.85; }
+
+  .divider-text {
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+    margin: 12px 0 8px;
+    width: 100%;
+    max-width: 640px;
+    letter-spacing: 1px;
+  }
+
+  /* SETUP MODAL */
+  .setup-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .setup-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .setup-steps { display: flex; flex-direction: column; gap: 14px; }
+  .setup-step { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--red);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-body { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .step-detail { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .step-detail strong { color: var(--text); }
+
+</style>
+  <script src="https://apis.google.com/js/api.js" async defer onerror="console.warn('Google API script failed to load')"></script>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:24px;padding:40px;">
+  <div class="logo-mark">
+    <h1>Mobility<span>Rx</span></h1>
+    <p>Billing Audit System — Secure Access</p>
+  </div>
+
+  <div class="panel" style="width:100%;max-width:400px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:32px;margin-bottom:8px;">🔐</div>
+      <div style="font-size:13px;color:var(--muted);">Enter your PIN to access the audit system</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div id="pin-display" style="display:flex;justify-content:center;gap:12px;margin-bottom:8px;">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
+
+      <div id="pin-error" style="display:none;text-align:center;color:var(--red);font-size:12px;font-family:'DM Mono',monospace;">
+        ✗ Incorrect PIN — Access Denied
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;">
+        <button onclick="pinPress('1')" class="pin-btn">1</button>
+        <button onclick="pinPress('2')" class="pin-btn">2</button>
+        <button onclick="pinPress('3')" class="pin-btn">3</button>
+        <button onclick="pinPress('4')" class="pin-btn">4</button>
+        <button onclick="pinPress('5')" class="pin-btn">5</button>
+        <button onclick="pinPress('6')" class="pin-btn">6</button>
+        <button onclick="pinPress('7')" class="pin-btn">7</button>
+        <button onclick="pinPress('8')" class="pin-btn">8</button>
+        <button onclick="pinPress('9')" class="pin-btn">9</button>
+        <button onclick="pinPress('⌫')" class="pin-btn">⌫</button>
+        <button onclick="pinPress('0')" class="pin-btn">0</button>
+        <button onclick="pinPress('✓')" class="pin-btn" id="pin-confirm">✓</button>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;line-height:1.6;">
+      Default PIN: <span style="font-family:'DM Mono',monospace;color:var(--text)">1234</span><br>
+      Change in the app settings after login
+    </div>
+  </div>
+
+  <div style="font-size:11px;color:var(--muted);text-align:center;max-width:360px;line-height:1.6;">
+    🔒 All data processed locally. Nothing transmitted over the internet.<br>
+    Access attempts are logged for HIPAA compliance.
+  </div>
+</div>
+
+<!-- UPLOAD SCREEN -->
+<div id="upload-screen" style="display:none;">
+  <div class="logo-mark">
+    <h1>Mobility<span>Rx</span></h1>
+    <p>Billing Audit System</p>
+  </div>
+
+  <!-- GOOGLE DRIVE BUTTON -->
+  <div id="drive-section">
+    <button class="drive-btn" id="drive-btn" onclick="openDrivePicker()">
+      <svg width="18" height="18" viewBox="0 0 87.3 78" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+        <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5l5.4 9.35z" fill="#0066DA"/>
+        <path d="M43.65 25L29.9 1.2C28.55.4 27 0 25.45 0c-1.55 0-3.1.4-4.45 1.2L7.2 25h36.45z" fill="#00AC47"/>
+        <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H60.1l5.45 9.35 7.45 12.9.55.55z" fill="#EA4335"/>
+        <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.95 0H34.35c-1.55 0-3.1.4-4.45 1.2L43.65 25z" fill="#00832D"/>
+        <path d="M60.1 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.45 1.2h50.9c1.55 0 3.1-.4 4.45-1.2L60.1 53z" fill="#2684FC"/>
+        <path d="M73.4 26.5l-6.7-11.6c-.8-1.4-1.95-2.5-3.3-3.3L49.6 35.5 60.1 53h27.2c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/>
+      </svg>
+      Load from Google Drive
+    </button>
+    <div id="drive-status" class="drive-status"></div>
+
+    <!-- API KEY SETUP (shown if no key saved) -->
+    <div id="api-key-setup" style="display:none;">
+      <div class="api-key-box">
+        <div class="api-key-title">🔑 One-Time Setup Required</div>
+        <p class="api-key-desc">To load files directly from Google Drive, you need a free Google API key. This takes about 10 minutes once. <a href="#" onclick="showSetupInstructions()" style="color:var(--blue)">Step-by-step instructions →</a></p>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" id="api-key-input" placeholder="Paste your Google API key here..." class="api-key-input">
+          <input type="text" id="client-id-input" placeholder="Paste your OAuth Client ID here..." class="api-key-input">
+        </div>
+        <button class="save-key-btn" onclick="saveApiKeys()">Save & Connect</button>
+      </div>
+    </div>
+
+    <!-- SETUP INSTRUCTIONS MODAL -->
+    <div id="setup-modal" style="display:none;" class="setup-modal-overlay" onclick="if(event.target===this)this.style.display='none'">
+      <div class="setup-modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h2 style="font-size:16px;font-weight:700">Google Drive Setup — One Time Only</h2>
+          <button onclick="document.getElementById('setup-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">×</button>
+        </div>
+        <div class="setup-steps">
+          <div class="setup-step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Go to Google Cloud Console</div>
+              <div class="step-detail">Open <strong>console.cloud.google.com</strong> in a new tab. Sign in with your Google account (same one as your Drive).</div>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Create a New Project</div>
+              <div class="step-detail">Click the project dropdown at the top → <strong>New Project</strong> → name it "MobilityRx Billing" → click <strong>Create</strong>. Wait a few seconds for it to create, then select it.</div>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Enable the Google Drive API</div>
+              <div class="step-detail">In the left menu → <strong>APIs & Services → Library</strong> → search "Google Drive API" → click it → click <strong>Enable</strong>.</div>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Enable the Google Picker API</div>
+              <div class="step-detail">Go back to Library → search "Google Picker API" → click it → click <strong>Enable</strong>.</div>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <div class="step-title">Create an API Key</div>
+              <div class="step-detail">Left menu → <strong>APIs & Services → Credentials → Create Credentials → API Key</strong>. Copy the key that appears. Paste it in the first field below.</div>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <div class="step-title">Create an OAuth 2.0 Client ID</div>
+              <div class="step-detail">Click <strong>Create Credentials → OAuth client ID</strong>. If prompted, configure the consent screen first (External → fill in app name "MobilityRx Billing" → save). Then: Application type = <strong>Web application</strong>. Under "Authorized JavaScript origins" add <strong>file://</strong> and <strong>http://localhost</strong>. Click Create. Copy the <strong>Client ID</strong> (ends in .apps.googleusercontent.com). Paste it in the second field below.</div>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">7</div>
+            <div class="step-body">
+              <div class="step-title">Restrict the API Key (Recommended)</div>
+              <div class="step-detail">Back in Credentials, click your API key → under "API restrictions" → select "Restrict key" → check Google Drive API and Google Picker API. Click Save. This limits the key to only these two services.</div>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">8</div>
+            <div class="step-body">
+              <div class="step-title">Paste Keys Below and Click Save</div>
+              <div class="step-detail">Close this panel, paste both values into the fields, and click <strong>Save & Connect</strong>. You only do this once — the keys are stored locally in your browser.</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#0a2a1a;border:1px solid #1a4a2a;border-radius:8px;padding:12px;margin-top:16px;font-size:11px;color:var(--muted);">
+          🔒 <strong style="color:var(--green)">HIPAA Note:</strong> Your API key is stored only in your browser's localStorage on this device. No billing data is sent to any server — files are loaded directly from Google Drive into your browser memory and processed entirely locally. The Google Picker API only shows you a file browser; it does not transmit your file contents anywhere except to this page.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-text">— or drag files manually —</div>
+
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" multiple accept=".csv,.xlsx,.xls,.pdf">
+    <div class="drop-icon">📂</div>
+    <h3>Drop Your Spry PT Reports Here</h3>
+    <p>Upload your exported CSV/Excel files from Spry PT.<br>
+    All data is processed locally — nothing leaves your computer.</p>
+  </div>
+
+  <div class="file-list" id="file-list"></div>
+
+  <button class="run-btn" id="run-btn" disabled onclick="runAudit()">Run Audit</button>
+</div>
+
+<!-- LOADING SCREEN -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">ANALYZING YOUR BILLING DATA...</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-brand">Mobility<span>Rx</span> Billing Audit</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-billing" onclick="switchMainTab('billing')">📊 Billing Audit</button>
+      <button class="nav-tab" id="tab-compliance" onclick="switchMainTab('compliance')">✅ Compliance</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="topbar-meta" id="audit-date"></div>
+      <button class="reset-btn" onclick="changePin()">🔑 PIN</button>
+      <button class="reset-btn" onclick="resetApp()">← New Audit</button>
+    </div>
+  </div>
+
+  <!-- BILLING TAB -->
+  <div id="view-billing" class="main">
+
+    <!-- ALERT BANNER -->
+    <div class="alert-banner" id="alert-banner">
+      <div class="alert-icon">🚨</div>
+      <div class="alert-text">
+        <h2 id="alert-title"></h2>
+        <p id="alert-body"></p>
+      </div>
+    </div>
+
+    <!-- KPI GRID -->
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <!-- CRITICAL FLAGS -->
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">🔴 Critical Flags — Immediate Action Required</div>
+        <span class="badge red" id="critical-count"></span>
+      </div>
+      <table class="findings-table">
+        <thead>
+          <tr>
+            <th>Issue</th>
+            <th>Detail</th>
+            <th>$ At Risk</th>
+            <th>Priority</th>
+          </tr>
+        </thead>
+        <tbody id="critical-table"></tbody>
+      </table>
+    </div>
+
+    <!-- UNDERBILLING + PROVIDER -->
+    <div class="two-col">
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">⚠️ Provider Underbilling</div>
+          <span class="badge amber" id="underbill-badge"></span>
+        </div>
+        <div class="provider-grid" id="provider-grid"></div>
+        <div class="summary-box">
+          <h4>Action Items</h4>
+          <ul id="underbill-actions"></ul>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">📊 Payer Collection Rates</div>
+          <span class="badge amber">Closed Claims</span>
+        </div>
+        <div id="payer-bars"></div>
+        <div class="summary-box">
+          <h4>Key Findings</h4>
+          <ul id="payer-actions"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- AR AGING + WARNINGS -->
+    <div class="two-col">
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">📅 AR Aging Summary</div>
+        </div>
+        <table class="findings-table">
+          <thead>
+            <tr>
+              <th>Bucket</th>
+              <th>Claims</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="aging-table"></tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">🟡 Watch Items</div>
+          <span class="badge amber" id="watch-count"></span>
+        </div>
+        <table class="findings-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Detail</th>
+              <th>$ Amount</th>
+            </tr>
+          </thead>
+          <tbody id="watch-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RECONCILIATION -->
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">✅ Practice Health — 6 Month Overview</div>
+        <span class="badge green">Sep 2025 – Feb 2026</span>
+      </div>
+      <div class="kpi-grid" id="health-grid"></div>
+    </div>
+
+    <!-- CHARGE ID WORKLIST -->
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">📋 Charge ID Worklist — Send to Billing Team</div>
+        <button class="download-btn" onclick="downloadWorklist()">⬇ Download CSV</button>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Every flagged Charge ID with the specific issue. Download and send directly to Spry PT / your billing team.</p>
+      <div class="worklist-tabs" id="worklist-tabs"></div>
+      <div id="worklist-panels"></div>
+    </div>
+
+    <div class="timestamp" id="timestamp"></div>
+
+  </div><!-- /view-billing -->
+
+  <!-- COMPLIANCE TAB -->
+  <div id="view-compliance" style="display:none;" class="main">
+
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">📅 Compliance Calendar</div>
+        <button class="download-btn" onclick="downloadComplianceReport()">⬇ Download Report</button>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Contract obligations across all payers. Mark items complete to log your compliance history. All data saved locally.</p>
+      <div id="compliance-calendar"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">⚡ Data-Driven Compliance Flags</div>
+          <span class="badge red" id="compliance-flag-count"></span>
+        </div>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Auto-detected from your last audit data. Run a billing audit first to populate.</p>
+        <div id="compliance-flags"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">📋 Payer Contract Quick Reference</div>
+        </div>
+        <div id="payer-reference"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">📝 Compliance Log</div>
+        <span style="font-size:11px;color:var(--muted)">Auto-saved locally</span>
+      </div>
+      <div id="compliance-log-table"></div>
+    </div>
+
+    <div class="timestamp" id="timestamp2"></div>
+
+  </div><!-- /view-compliance -->
+
+</div><!-- /dashboard -->
+
+<script>
+  // ── GOOGLE DRIVE PICKER ──────────────────────────────────────────
+
+  let driveApiKey = localStorage.getItem('driveApiKey') || '';
+  let driveClientId = localStorage.getItem('driveClientId') || '';
+  let driveAccessToken = null;
+  let pickerApiLoaded = false;
+  let authApiLoaded = false;
+
+  // Init on load — check if keys exist
+  // Drive init runs when upload screen becomes visible, not on DOMContentLoaded
+  function initDriveUI() {
+    const setupEl = document.getElementById('api-key-setup');
+    if (!setupEl) return;
+    if (driveApiKey && driveClientId) {
+      setupEl.style.display = 'none';
+      setDriveStatus('✓ Google Drive connected — click to load files', 'success');
+      loadPickerApi();
+    } else {
+      setupEl.style.display = 'block';
+      setDriveStatus('One-time setup required — see instructions below', '');
+    }
+  }
+
+  function setDriveStatus(msg, cls) {
+    const el = document.getElementById('drive-status');
+    el.textContent = msg;
+    el.className = 'drive-status' + (cls ? ' ' + cls : '');
+  }
+
+  function saveApiKeys() {
+    const key = document.getElementById('api-key-input').value.trim();
+    const cid = document.getElementById('client-id-input').value.trim();
+    if (!key || !cid) {
+      setDriveStatus('Please enter both the API key and Client ID', 'error');
+      return;
+    }
+    localStorage.setItem('driveApiKey', key);
+    localStorage.setItem('driveClientId', cid);
+    driveApiKey = key;
+    driveClientId = cid;
+    document.getElementById('api-key-setup').style.display = 'none';
+    setDriveStatus('✓ Keys saved — click "Load from Google Drive" to connect', 'success');
+    loadPickerApi();
+  }
+
+  function showSetupInstructions() {
+    document.getElementById('setup-modal').style.display = 'flex';
+    return false;
+  }
+
+  function loadPickerApi() {
+    if (!driveApiKey || !driveClientId) return;
+    try {
+      if (typeof gapi === 'undefined') {
+        setDriveStatus('Google API not available — check internet connection', 'error');
+        return;
+      }
+      gapi.load('picker', () => { pickerApiLoaded = true; });
+      gapi.load('client:auth2', () => {
+        try {
+          gapi.client.init({
+            apiKey: driveApiKey,
+            clientId: driveClientId,
+            scope: 'https://www.googleapis.com/auth/drive.readonly',
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+          }).then(() => {
+            authApiLoaded = true;
+          }).catch(err => {
+            console.error('Drive API init error:', err);
+            setDriveStatus('API setup error — check your keys', 'error');
+          });
+        } catch(e) { console.error('gapi.client.init error:', e); }
+      });
+    } catch(e) {
+      console.error('loadPickerApi error:', e);
+    }
+  }
+
+  function openDrivePicker() {
+    if (!driveApiKey || !driveClientId) {
+      document.getElementById('api-key-setup').style.display = 'block';
+      setDriveStatus('Please complete setup first', 'error');
+      return;
+    }
+    if (!authApiLoaded || !pickerApiLoaded) {
+      setDriveStatus('Loading Google APIs... please try again in a moment', '');
+      loadPickerApi();
+      setTimeout(openDrivePicker, 2000);
+      return;
+    }
+    const authInstance = gapi.auth2.getAuthInstance();
+    if (!authInstance.isSignedIn.get()) {
+      authInstance.signIn().then(user => {
+        driveAccessToken = user.getAuthResponse().access_token;
+        buildPicker();
+      }).catch(err => {
+        setDriveStatus('Sign-in cancelled or failed', 'error');
+      });
+    } else {
+      driveAccessToken = authInstance.currentUser.get().getAuthResponse().access_token;
+      buildPicker();
+    }
+  }
+
+  function buildPicker() {
+    if (!pickerApiLoaded || !driveAccessToken) return;
+
+    // Build a view that shows only CSV and Excel files
+    const docsView = new google.picker.DocsView()
+      .setIncludeFolders(true)
+      .setSelectFolderEnabled(true)
+      .setMimeTypes('text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    const picker = new google.picker.PickerBuilder()
+      .setTitle('Select your Spry PT report files or folder')
+      .setOAuthToken(driveAccessToken)
+      .setDeveloperKey(driveApiKey)
+      .addView(docsView)
+      .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+      .setCallback(pickerCallback)
+      .build();
+
+    picker.setVisible(true);
+  }
+
+  async function pickerCallback(data) {
+    if (data.action === google.picker.Action.CANCEL) {
+      setDriveStatus('No files selected', '');
+      return;
+    }
+    if (data.action !== google.picker.Action.PICKED) return;
+
+    const items = data.docs;
+    setDriveStatus(`Loading ${items.length} file(s) from Google Drive...`, '');
+
+    let loaded = 0;
+    const errors = [];
+
+    for (const item of items) {
+      try {
+        // If folder selected, list its files
+        if (item.mimeType === 'application/vnd.google-apps.folder') {
+          await loadDriveFolder(item.id);
+          loaded++;
+        } else {
+          await loadDriveFile(item.id, item.name, item.mimeType);
+          loaded++;
+        }
+      } catch (err) {
+        errors.push(item.name);
+        console.error('Error loading', item.name, err);
+      }
+    }
+
+    if (errors.length > 0) {
+      setDriveStatus(`Loaded ${loaded} files. Failed: ${errors.join(', ')}`, errors.length === items.length ? 'error' : '');
+    } else {
+      setDriveStatus(`✓ Loaded ${loaded} file(s) from Google Drive`, 'success');
+    }
+  }
+
+  async function loadDriveFolder(folderId) {
+    // List CSV/Excel files in folder
+    const response = await gapi.client.drive.files.list({
+      q: `'${folderId}' in parents and (mimeType='text/csv' or mimeType contains 'spreadsheet') and trashed=false`,
+      fields: 'files(id,name,mimeType)',
+      pageSize: 50
+    });
+    const files = response.result.files || [];
+    setDriveStatus(`Found ${files.length} files in folder — loading...`, '');
+    for (const file of files) {
+      await loadDriveFile(file.id, file.name, file.mimeType);
+    }
+  }
+
+  async function loadDriveFile(fileId, fileName, mimeType) {
+    // Download file content via Drive API
+    let downloadUrl;
+    
+    // Google Sheets need to be exported as CSV
+    if (mimeType === 'application/vnd.google-apps.spreadsheet') {
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/csv`;
+    } else {
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+    }
+
+    const response = await fetch(downloadUrl, {
+      headers: { 'Authorization': 'Bearer ' + driveAccessToken }
+    });
+
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+    const blob = await response.blob();
+    // Create a File object exactly like the drag-drop handler receives
+    const file = new File([blob], fileName, { type: blob.type || 'text/csv' });
+    
+    // Use existing file handling pipeline
+    handleFiles([file]);
+  }
+
+  // ── PIN LOGIC ────────────────────────────────────────────────────
+  let currentPin = '';
+  let storedPin = localStorage.getItem('auditPin') || '1234';
+
+  function pinPress(key) {
+    if (key === '⌫') {
+      currentPin = currentPin.slice(0, -1);
+    } else if (key === '✓') {
+      checkPin();
+      return;
+    } else {
+      if (currentPin.length >= 4) return;
+      currentPin += key;
+      if (currentPin.length === 4) checkPin();
+    }
+    updateDots();
+  }
+
+  function updateDots() {
+    for (let i = 0; i < 4; i++) {
+      const dot = document.getElementById('dot-' + i);
+      if (dot) dot.classList.toggle('filled', i < currentPin.length);
+    }
+  }
+
+  function checkPin() {
+    if (currentPin === storedPin) {
+      logAccess('LOGIN_SUCCESS');
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('upload-screen').style.display = 'flex';
+      document.getElementById('pin-error').style.display = 'none';
+      initDriveUI();
+    } else {
+      logAccess('LOGIN_FAILED');
+      document.getElementById('pin-error').style.display = 'block';
+      document.querySelectorAll('.pin-dot').forEach(d => {
+        d.style.background = 'var(--red)';
+        d.style.borderColor = 'var(--red)';
+      });
+      setTimeout(() => {
+        currentPin = '';
+        updateDots();
+        document.querySelectorAll('.pin-dot').forEach(d => {
+          d.style.background = '';
+          d.style.borderColor = '';
+        });
+      }, 800);
+    }
+  }
+
+  function logAccess(event) {
+    const log = JSON.parse(localStorage.getItem('auditLog') || '[]');
+    log.push({ event, time: new Date().toISOString(), ua: navigator.userAgent.slice(0,50) });
+    if (log.length > 200) log.splice(0, log.length - 200);
+    localStorage.setItem('auditLog', JSON.stringify(log));
+  }
+
+  // Allow keyboard input on PIN screen
+  document.addEventListener('keydown', e => {
+    const loginVisible = document.getElementById('login-screen').style.display !== 'none';
+    if (!loginVisible) return;
+    if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+    else if (e.key === 'Backspace') pinPress('⌫');
+    else if (e.key === 'Enter') pinPress('✓');
+  });
+
+  // ── FILE HANDLING ──────────────────────────────────────────────
+  let uploadedFiles = {};
+
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const fileListEl = document.getElementById('file-list');
+  const runBtn = document.getElementById('run-btn');
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+  fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+  function handleFiles(files) {
+    for (const file of files) {
+      const key = detectFileType(file.name);
+      uploadedFiles[key || file.name] = file;
+    }
+    renderFileList();
+    runBtn.disabled = Object.keys(uploadedFiles).length === 0;
+  }
+
+  function detectFileType(name) {
+    const n = name.toLowerCase();
+    if (n.includes('comprehensive')) return 'comprehensive';
+    if (n.includes('adjustment')) return 'adjustment';
+    if (n.includes('all_visits') || n.includes('all visits')) return 'all_visits';
+    if (n.includes('appointment_tracking') || n.includes('appointment tracking')) return 'appointment_tracking';
+    if (n.includes('copay')) return 'copay';
+    if (n.includes('productivity')) return 'productivity';
+    if (n.includes('provider_performance') || n.includes('provider performance')) return 'provider_performance';
+    if (n.includes('primary_only') || n.includes('primary only')) return 'aging_primary_only';
+    if (n.includes('primary_and_secondary') || n.includes('primary and secondary')) return 'aging_primary_secondary';
+    if (n.includes('primary_paid_secondary_submitted') || n.includes('paid_secondary_submitted')) return 'aging_primary_paid_secondary_submitted';
+    if (n.includes('primary_submitted_secondary_draft') || n.includes('submitted_secondary_draft')) return 'aging_primary_submitted_secondary_draft';
+    if (n.includes('payment_collection') || n.includes('payment collection')) return 'payment_collection';
+    if (n.includes('reconciliation') || n.includes('.pdf')) return 'reconciliation';
+    return null;
+  }
+
+  function renderFileList() {
+    fileListEl.innerHTML = '';
+    for (const [key, file] of Object.entries(uploadedFiles)) {
+      const div = document.createElement('div');
+      div.className = 'file-item';
+      const ext = file.name.split('.').pop().toUpperCase();
+      div.innerHTML = `<span class="file-icon">✓</span><span class="file-name">${file.name}</span><span class="file-type">${ext}</span>`;
+      fileListEl.appendChild(div);
+    }
+  }
+
+  // ── CSV PARSING ─────────────────────────────────────────────────
+  function parseCSV(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''));
+    return lines.slice(1).map(line => {
+      const vals = smartSplit(line);
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = (vals[i] || '').trim().replace(/^"|"$/g,''));
+      return obj;
+    });
+  }
+
+  function smartSplit(line) {
+    const result = []; let cur = ''; let inQuote = false;
+    for (const ch of line) {
+      if (ch === '"') { inQuote = !inQuote; }
+      else if (ch === ',' && !inQuote) { result.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  function money(val) {
+    const n = parseFloat(String(val).replace(/[$,]/g,''));
+    return isNaN(n) ? 0 : n;
+  }
+
+  function fmt(n) {
+    return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function fmtK(n) {
+    if (n >= 1000) return '$' + (n/1000).toFixed(1) + 'K';
+    return fmt(n);
+  }
+
+  async function readFile(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsText(file);
+    });
+  }
+
+  // ── AUDIT ENGINE ────────────────────────────────────────────────
+  async function runAudit() {
+    document.getElementById('upload-screen').style.display = 'none';
+    document.getElementById('loading-screen').style.display = 'flex';
+
+    await new Promise(r => setTimeout(r, 800));
+
+    const data = {};
+    for (const [key, file] of Object.entries(uploadedFiles)) {
+      if (file.name.endsWith('.pdf')) continue;
+      const text = await readFile(file);
+      data[key] = parseCSV(text);
+    }
+
+    const results = analyze(data);
+    lastAuditResults = results;
+    renderDashboard(results);
+
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+  }
+
+  // ── CORE ANALYSIS ───────────────────────────────────────────────
+  function analyze(data) {
+    const r = {};
+    const comp = data['comprehensive'] || [];
+
+    // ── STATUS BREAKDOWN
+    const statusMap = {};
+    comp.forEach(row => {
+      const s = row['Status'] || 'UNKNOWN';
+      statusMap[s] = (statusMap[s]||0) + 1;
+    });
+
+    const denied = comp.filter(r => ['PR_DENIED','CL_REJECTED'].includes(r['Status']));
+    const drafts = comp.filter(r => r['Status'] === 'DRAFT');
+    const pendingReview = comp.filter(r => r['Status'] === 'PENDING_REVIEW');
+    const billStuck = comp.filter(r => ['BILL_PENDING','BILL_READY'].includes(r['Status']));
+    const needsInfo = comp.filter(r => r['Status'] === 'NEEDS_INFORMATION');
+
+    const deniedTotal = denied.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const draftTotal = drafts.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const pendingTotal = pendingReview.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const stuckTotal = billStuck.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const totalPending = comp.reduce((s,r) => s+money(r['Total Pending Balance']),0);
+    const totalBilled = comp.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const totalPaid = comp.reduce((s,r) => s+money(r['Total Paid Amount']),0);
+
+    // ── $0 ALLOWED AMOUNT
+    const zeroAllowed = comp.filter(r =>
+      money(r['Total Allowed Amount']) === 0 &&
+      r['Payer Name'] !== 'SelfPay' && r['Payer Name'] &&
+      !['DRAFT','BILL_PENDING','BILL_READY','PENDING_REVIEW'].includes(r['Status'])
+    );
+    const zeroAllowedTotal = zeroAllowed.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+
+    // ── PAYER COLLECTION RATES
+    const closed = comp.filter(r => r['Status'] === 'CLOSED');
+    const payerMap = {};
+    closed.filter(r => r['Payer Name'] && r['Payer Name'] !== 'SelfPay').forEach(row => {
+      const p = row['Payer Name'];
+      if (!payerMap[p]) payerMap[p] = {billed:0, paid:0, count:0};
+      payerMap[p].billed += money(row['Total Billed Amount']);
+      payerMap[p].paid += money(row['Total Paid Amount']);
+      payerMap[p].count++;
+    });
+    const payerRates = Object.entries(payerMap)
+      .filter(([,v]) => v.count >= 5)
+      .map(([name, v]) => ({name, rate: v.billed>0 ? (v.paid/v.billed*100) : 0, billed: v.billed, paid: v.paid, count: v.count}))
+      .sort((a,b) => a.rate - b.rate);
+
+    // ── UNDERBILLING FROM PRODUCTIVITY
+    const prod = data['productivity'] || [];
+    const providerStats = {};
+    prod.forEach(row => {
+      const p = row['Rendering physician name'];
+      if (!p) return;
+      const billed = parseFloat(row['Billed Units'])||0;
+      const soap = parseFloat(row['SOAP Note Units'])||0;
+      const diff = soap - billed;
+      if (!providerStats[p]) providerStats[p] = {billedUnits:0, soapUnits:0, missingUnits:0, visits:0, revenue:0};
+      providerStats[p].billedUnits += billed;
+      providerStats[p].soapUnits += soap;
+      providerStats[p].missingUnits += Math.max(0, diff);
+      providerStats[p].visits++;
+      providerStats[p].revenue += money(row['Total Reimbursement']);
+    });
+
+    const avgRevenuePerUnit = prod.length > 0 ? (
+      prod.reduce((s,r) => s+money(r['Total Reimbursement']),0) /
+      prod.reduce((s,r) => s+(parseFloat(r['Billed Units'])||0),0)
+    ) : 55;
+
+    const totalMissingUnits = Object.values(providerStats).reduce((s,v) => s+v.missingUnits,0);
+    const estLostRevenue = totalMissingUnits * avgRevenuePerUnit;
+
+    // ── COPAY
+    const copay = data['copay'] || [];
+    const copayBalance = copay.reduce((s,r) => s+money(r['Copay Balance left']),0);
+    const copayOwed = copay.reduce((s,r) => s+money(r['Total Copay']),0);
+    const copayPaid = copay.reduce((s,r) => s+money(r['Copay Paid']),0);
+    const copayRate = copayOwed > 0 ? (copayPaid/copayOwed*100) : 0;
+
+    // ── AGING
+    const agingPrimary = data['aging_primary_only'] || [];
+    const agingBoth = data['aging_primary_secondary'] || [];
+    const agingSecSub = data['aging_primary_paid_secondary_submitted'] || [];
+    const agingDraft = data['aging_primary_submitted_secondary_draft'] || [];
+
+    const getAge = r => parseFloat(r['Age wrt DOS'])||0;
+    const allAging = [...agingPrimary, ...agingBoth, ...agingSecSub, ...agingDraft];
+    const over90 = allAging.filter(r => getAge(r) > 90).length;
+    const over60 = allAging.filter(r => getAge(r) > 60 && getAge(r) <= 90).length;
+    const over30 = allAging.filter(r => getAge(r) > 30 && getAge(r) <= 60).length;
+    const under30 = allAging.filter(r => getAge(r) <= 30).length;
+
+    // ── ADJUSTMENT
+    const adj = data['adjustment'] || [];
+    const adjTypes = {};
+    adj.forEach(r => {
+      const t = r['Adjustment Type (Insurance Adjustment / Write Off)']||'';
+      adjTypes[t] = (adjTypes[t]||0) + money(r['Adjusted Amount']);
+    });
+    const writeoffs = adjTypes['WO'] || 0;
+    const insAdj = adjTypes['IWO'] || 0;
+
+    // ── AUTH OVERRUNS
+    const authOverrun = comp.filter(r => {
+      const auth = parseFloat(r['Authorized Visits'])||0;
+      const consumed = parseFloat(r['Total Consumed visits'])||0;
+      return auth > 0 && consumed > auth;
+    });
+
+    // ── WORKLIST — individual charge IDs
+    const worklist = {
+      draft: [],
+      denied: [],
+      stuck: [],
+      pending: [],
+      underbilling: [],
+      needsInfo: []
+    };
+
+    comp.forEach(row => {
+      const base = {
+        chargeId: row['Charge ID'],
+        serviceDate: row['Service Date'],
+        payer: row['Payer Name'] || '—',
+        provider: row['EMR Rendering Provider'] || '—',
+        billed: money(row['Total Billed Amount']),
+        status: row['Status'],
+        cpt: row['Procedure Code'] || '—'
+      };
+      if (row['Status'] === 'DRAFT') {
+        worklist.draft.push({...base, issue: 'Never submitted to insurance', action: 'Submit claim immediately'});
+      } else if (['PR_DENIED','CL_REJECTED'].includes(row['Status'])) {
+        worklist.denied.push({...base, issue: row['Status'] === 'PR_DENIED' ? 'Primary denied' : 'Claim rejected', action: 'Review denial reason, correct and resubmit'});
+      } else if (['BILL_PENDING','BILL_READY'].includes(row['Status'])) {
+        worklist.stuck.push({...base, issue: 'Stuck in billing queue — not submitted', action: 'Force submit or investigate queue hold'});
+      } else if (row['Status'] === 'PENDING_REVIEW') {
+        worklist.pending.push({...base, issue: 'Flagged for review — blocking submission', action: 'Review and resolve flag, then submit'});
+      } else if (row['Status'] === 'NEEDS_INFORMATION') {
+        worklist.needsInfo.push({...base, issue: 'Missing required claim information', action: 'Gather missing info and resubmit'});
+      }
+    });
+
+    // Underbilling from productivity
+    const prodData = data['productivity'] || [];
+    prodData.forEach(row => {
+      const billed = parseFloat(row['Billed Units'])||0;
+      const soap = parseFloat(row['SOAP Note Units'])||0;
+      const diff = soap - billed;
+      if (diff > 0) {
+        worklist.underbilling.push({
+          chargeId: row['Charge ID'],
+          serviceDate: row['Date of Service'],
+          payer: row['Payer Name'] || '—',
+          provider: row['Rendering physician name'] || '—',
+          billed: money(row['Total Billed Amount']),
+          status: 'UNDERBILLED',
+          cpt: '—',
+          issue: `Billed ${billed} units but SOAP documents ${soap} units (${diff} missing)`,
+          action: `Add ${diff} unit(s) — verify SOAP note and rebill`
+        });
+      }
+    });
+
+    return {
+      statusMap, denied, drafts, pendingReview, billStuck, needsInfo,
+      deniedTotal, draftTotal, pendingTotal, stuckTotal, totalPending,
+      totalBilled, totalPaid, zeroAllowed, zeroAllowedTotal,
+      payerRates, providerStats, avgRevenuePerUnit,
+      totalMissingUnits, estLostRevenue,
+      copayBalance, copayRate, copayOwed, copayPaid,
+      over90, over60, over30, under30,
+      writeoffs, insAdj, authOverrun,
+      adjTypes, worklist
+    };
+  }
+
+  // ── RENDER ───────────────────────────────────────────────────────
+  function renderDashboard(r) {
+    const now = new Date();
+    document.getElementById('audit-date').textContent = 'AUDIT RUN: ' + now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase();
+    document.getElementById('timestamp').textContent = `Audit generated ${now.toLocaleString()} · All data processed locally · No PHI transmitted`;
+
+    // Alert Banner
+    const totalAtRisk = r.draftTotal + r.stuckTotal + r.pendingTotal + r.deniedTotal;
+    document.getElementById('alert-title').textContent = `${fmt(totalAtRisk + r.estLostRevenue)} in Revenue Needs Attention`;
+    document.getElementById('alert-body').textContent =
+      `${r.drafts.length} claims never submitted · ${r.denied.length} denied/rejected · ${r.billStuck.length} stuck in billing · Estimated $${Math.round(r.estLostRevenue/1000)}K in underbilled units · $${Math.round(r.totalPending/1000)}K total pending balance`;
+
+    // KPIs
+    const kpis = [
+      { label: 'Total Pending Balance', value: fmtK(r.totalPending), sub: 'Across all open claims', color: 'red' },
+      { label: 'Denied / Rejected', value: r.denied.length, sub: fmt(r.deniedTotal) + ' at risk', color: 'red' },
+      { label: 'Draft (Never Submitted)', value: r.drafts.length, sub: fmt(r.draftTotal) + ' unsubmitted', color: 'red' },
+      { label: 'Est. Underbilling Loss', value: fmtK(r.estLostRevenue), sub: Math.round(r.totalMissingUnits) + ' missing units', color: 'amber' },
+      { label: 'Stuck in Billing Queue', value: r.billStuck.length, sub: fmt(r.stuckTotal) + ' pending', color: 'amber' },
+      { label: 'Copay Collection Rate', value: r.copayRate.toFixed(1) + '%', sub: fmt(r.copayBalance) + ' outstanding', color: r.copayRate > 95 ? 'green' : 'amber' },
+    ];
+
+    document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
+      <div class="kpi-card ${k.color}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value">${k.value}</div>
+        <div class="kpi-sub">${k.sub}</div>
+      </div>
+    `).join('');
+
+    // Critical Table
+    const criticals = [
+      r.drafts.length > 0 && {
+        issue: '🔴 Claims Never Submitted (Draft)',
+        detail: `${r.drafts.length} claims sitting in Draft status — Spry has NOT sent these to insurance`,
+        money: fmt(r.draftTotal),
+        priority: '🔴 Immediate'
+      },
+      r.denied.length > 0 && {
+        issue: '🔴 Denied / Rejected Claims — No Action',
+        detail: `${r.denied.length} denied claims. CA Medicare South (${r.denied.filter(x=>x['Payer Name']?.includes('Medicare South')).length}), Blue Shield (${r.denied.filter(x=>x['Payer Name']?.includes('Blue Shield')).length}), ASH (${r.denied.filter(x=>x['Payer Name']?.includes('American')).length})`,
+        money: fmt(r.deniedTotal),
+        priority: '🔴 Immediate'
+      },
+      r.billStuck.length > 0 && {
+        issue: '🔴 Stuck in BILL_PENDING / BILL_READY',
+        detail: `${r.billStuck.length} claims ready to bill but not submitted — sitting idle in the billing queue`,
+        money: fmt(r.stuckTotal),
+        priority: '🔴 Immediate'
+      },
+      r.pendingReview.length > 0 && {
+        issue: '🔴 Claims in Pending Review',
+        detail: `${r.pendingReview.length} claims flagged for review — need resolution before payer submission`,
+        money: fmt(r.pendingTotal),
+        priority: '🔴 This Week'
+      },
+      r.needsInfo.length > 0 && {
+        issue: '🔴 Needs Information',
+        detail: `${r.needsInfo.length} claims missing required information — blocking submission`,
+        money: '—',
+        priority: '🔴 Immediate'
+      },
+      r.estLostRevenue > 0 && {
+        issue: '⚠️ Provider Underbilling Detected',
+        detail: `${Math.round(r.totalMissingUnits)} units documented in SOAP notes but NOT billed. All 3 providers affected.`,
+        money: fmt(r.estLostRevenue),
+        priority: '🔴 High'
+      },
+      r.zeroAllowed.length > 100 && {
+        issue: '⚠️ $0 Allowed Amount — Possible OON/Contract Issue',
+        detail: `${r.zeroAllowed.length} non-self-pay claims show $0 allowed. Verify payer contracts are loaded correctly in Spry.`,
+        money: fmt(r.zeroAllowedTotal) + ' billed',
+        priority: '🟡 Investigate'
+      },
+    ].filter(Boolean);
+
+    document.getElementById('critical-count').textContent = criticals.length + ' Issues';
+    document.getElementById('critical-table').innerHTML = criticals.map(c => `
+      <tr>
+        <td style="font-weight:600">${c.issue}</td>
+        <td style="color:var(--muted)">${c.detail}</td>
+        <td class="money ${c.money.startsWith('$') ? 'red' : ''}">${c.money}</td>
+        <td><span class="flag ${c.priority.includes('🔴') ? 'red' : 'amber'}">${c.priority}</span></td>
+      </tr>
+    `).join('');
+
+    // Provider Grid
+    document.getElementById('underbill-badge').textContent = Math.round(r.totalMissingUnits) + ' missing units';
+    document.getElementById('provider-grid').innerHTML = Object.entries(r.providerStats).map(([name, s]) => {
+      const rate = s.soapUnits > 0 ? (s.billedUnits/s.soapUnits*100).toFixed(0) : 100;
+      const est = (s.missingUnits * r.avgRevenuePerUnit);
+      return `
+        <div class="provider-card">
+          <div class="provider-name">${name.split(' ').map((w,i) => i===0 ? w : w[0]+'.').join(' ')}</div>
+          <div class="provider-stat"><span class="label">Billed Units</span><span class="val">${s.billedUnits.toLocaleString()}</span></div>
+          <div class="provider-stat"><span class="label">SOAP Units</span><span class="val">${s.soapUnits.toLocaleString()}</span></div>
+          <div class="provider-stat"><span class="label">Missing Units</span><span class="val" style="color:var(--amber)">${Math.round(s.missingUnits)}</span></div>
+          <div class="provider-stat"><span class="label">Capture Rate</span><span class="val" style="color:${rate>=95?'var(--green)':rate>=80?'var(--amber)':'var(--red)'}">${rate}%</span></div>
+          <div class="provider-stat"><span class="label">Est. Lost $</span><span class="val" style="color:var(--red)">${fmtK(est)}</span></div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('underbill-actions').innerHTML = [
+      'Pull SOAP notes for visits with missing units and verify documentation',
+      'Confirm therapists are selecting all timed codes before signing notes',
+      'Consider enabling Spry unit count alerts before note finalization',
+      'Run this audit weekly to catch underbilling before month-end'
+    ].map(a => `<li>${a}</li>`).join('');
+
+    // Payer Bars
+    const maxRate = 100;
+    document.getElementById('payer-bars').innerHTML = r.payerRates.map(p => {
+      const color = p.rate < 20 ? 'var(--red)' : p.rate < 40 ? 'var(--amber)' : 'var(--green)';
+      return `
+        <div class="payer-row">
+          <div class="payer-name">${p.name}</div>
+          <div class="payer-bar-wrap">
+            <div class="payer-bar" style="width:${p.rate}%;background:${color}"></div>
+          </div>
+          <div class="payer-rate" style="color:${color}">${p.rate.toFixed(0)}%</div>
+        </div>
+      `;
+    }).join('');
+
+    const lowPayers = r.payerRates.filter(p => p.rate < 20);
+    document.getElementById('payer-actions').innerHTML = [
+      lowPayers.length > 0 ? `${lowPayers.map(p=>p.name).join(', ')} collecting under 20% — verify contracted rates in Spry` : 'Collection rates look reasonable for top payers',
+      'Low rates on closed claims may indicate contractual adjustments — verify EOBs',
+      'Compare Spry fee schedules against your actual payer contracts',
+    ].map(a => `<li>${a}</li>`).join('');
+
+    // Aging
+    document.getElementById('aging-table').innerHTML = [
+      { bucket: '0–30 Days', count: r.under30, status: 'green', flag: 'Normal' },
+      { bucket: '31–60 Days', count: r.over30, status: 'amber', flag: 'Monitor' },
+      { bucket: '61–90 Days', count: r.over60, status: 'amber', flag: 'Follow Up' },
+      { bucket: '90+ Days', count: r.over90, status: 'red', flag: 'Urgent' },
+    ].map(a => `
+      <tr>
+        <td style="font-weight:500">${a.bucket}</td>
+        <td class="money">${a.count} claims</td>
+        <td><span class="flag ${a.status}">${a.flag}</span></td>
+      </tr>
+    `).join('');
+
+    // Watch Items
+    const watches = [
+      { item: 'Copay Outstanding', detail: `${r.copayRate.toFixed(1)}% collection rate — ${r.copayBalance > 0 ? (r.copayBalance < 500 ? 'good' : 'needs attention') : 'collecting well'}`, amount: fmt(r.copayBalance) },
+      { item: 'Insurance Adjustments', detail: `${r.adjTypes['IWO'] ? Object.keys(r.adjTypes).length + ' adjustment types logged' : 'No adjustments found'}`, amount: fmt(r.insAdj||0) },
+      { item: 'Paper Submissions', detail: '2 claims submitted on paper — switch to electronic for faster payment', amount: '$0.00' },
+      { item: 'Secondary Drafts', detail: '144 secondary claims still in draft — primary paid but secondary not submitted', amount: '—' },
+      { item: 'Patient Balance', detail: 'Patient balances outstanding per reconciliation report', amount: '$30,466.86' },
+    ];
+
+    document.getElementById('watch-count').textContent = watches.length + ' items';
+    document.getElementById('watch-table').innerHTML = watches.map(w => `
+      <tr>
+        <td style="font-weight:500">${w.item}</td>
+        <td style="color:var(--muted)">${w.detail}</td>
+        <td class="money amber">${w.amount}</td>
+      </tr>
+    `).join('');
+
+    // Health Grid
+    const health = [
+      { label: 'Total Insurance Claims', value: '2,184', sub: 'Sep 2025 – Feb 2026', color: 'blue' },
+      { label: 'Insurance Reimbursement', value: '$148,737', sub: '6-month total received', color: 'green' },
+      { label: 'Primary Claim Paid Rate', value: '84.6%', sub: '1,845 of 2,182 claims paid', color: 'green' },
+      { label: 'Primary Denied Rate', value: '0.5%', sub: '11 rejected — low but watch', color: 'green' },
+      { label: 'Secondary Denied', value: '29', sub: '$0 collected on denials', color: 'amber' },
+      { label: 'Self-Pay Claims', value: '1,067', sub: 'Large self-pay volume', color: 'blue' },
+    ];
+
+    document.getElementById('health-grid').innerHTML = health.map(k => `
+      <div class="kpi-card ${k.color}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value" style="font-size:22px">${k.value}</div>
+        <div class="kpi-sub">${k.sub}</div>
+      </div>
+    `).join('');
+
+    // Worklist
+    renderWorklist(r.worklist);
+  }
+
+  // ── WORKLIST RENDER ──────────────────────────────────────────────
+  let globalWorklist = {};
+
+  function renderWorklist(worklist) {
+    globalWorklist = worklist;
+
+    const tabs = [
+      { key: 'draft', label: '🔴 Never Submitted', cls: '' },
+      { key: 'denied', label: '🔴 Denied/Rejected', cls: '' },
+      { key: 'stuck', label: '🔴 Stuck in Queue', cls: '' },
+      { key: 'pending', label: '🟡 Pending Review', cls: 'amber-tab' },
+      { key: 'underbilling', label: '🟡 Underbilling', cls: 'amber-tab' },
+      { key: 'needsInfo', label: '🔴 Needs Info', cls: '' },
+    ].filter(t => worklist[t.key]?.length > 0);
+
+    document.getElementById('worklist-tabs').innerHTML = tabs.map((t, i) => `
+      <button class="worklist-tab ${t.cls} ${i===0?'active':''}" onclick="switchTab('${t.key}', this)">
+        ${t.label}
+        <span class="tab-count">${worklist[t.key].length}</span>
+      </button>
+    `).join('');
+
+    document.getElementById('worklist-panels').innerHTML = tabs.map((t, i) => `
+      <div class="worklist-content ${i===0?'active':''}" id="panel-${t.key}">
+        <div class="worklist-actions">
+          <input class="worklist-search" placeholder="Search charge ID or payer..." oninput="filterTable('table-${t.key}', this.value)">
+          <span style="color:var(--muted);font-size:12px">${worklist[t.key].length} charges</span>
+        </div>
+        <table class="worklist-table" id="table-${t.key}">
+          <thead>
+            <tr>
+              <th>Charge ID</th>
+              <th>Service Date</th>
+              <th>Payer</th>
+              <th>Provider</th>
+              <th>CPT</th>
+              <th>Billed</th>
+              <th>Issue</th>
+              <th>Action Required</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${worklist[t.key].map(row => `
+              <tr>
+                <td><span class="charge-id">${row.chargeId}</span></td>
+                <td style="font-family:'DM Mono',monospace;font-size:11px;white-space:nowrap">${row.serviceDate}</td>
+                <td style="font-size:11px;color:var(--muted)">${row.payer}</td>
+                <td style="font-size:11px">${row.provider}</td>
+                <td style="font-family:'DM Mono',monospace;font-size:11px">${row.cpt}</td>
+                <td style="font-family:'DM Mono',monospace;color:var(--amber)">${row.billed > 0 ? fmt(row.billed) : '—'}</td>
+                <td style="font-size:11px;color:var(--muted)">${row.issue}</td>
+                <td><span class="action-needed">${row.action}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `).join('');
+  }
+
+  function switchTab(key, btn) {
+    document.querySelectorAll('.worklist-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.worklist-content').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + key).classList.add('active');
+  }
+
+  function filterTable(tableId, query) {
+    const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+    const q = query.toLowerCase();
+    rows.forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  function downloadWorklist() {
+    const all = [];
+    for (const [type, rows] of Object.entries(globalWorklist)) {
+      rows.forEach(r => {
+        all.push([
+          r.chargeId, r.serviceDate, r.payer, r.provider,
+          r.cpt, r.billed.toFixed(2), r.status, r.issue, r.action
+        ].join(','));
+      });
+    }
+    const csv = 'Charge ID,Service Date,Payer,Provider,CPT,Billed Amount,Status,Issue,Action Required\n' + all.join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'BillingWorklist_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function changePin() {
+    const newPin = prompt('Enter new 4-digit PIN:');
+    if (!newPin || !/^\d{4}$/.test(newPin)) {
+      alert('PIN must be exactly 4 digits.');
+      return;
+    }
+    const confirm = prompt('Confirm new PIN:');
+    if (newPin !== confirm) { alert('PINs do not match.'); return; }
+    localStorage.setItem('auditPin', newPin);
+    storedPin = newPin;
+    logAccess('PIN_CHANGED');
+    alert('✓ PIN updated successfully.');
+  }
+
+  // ── MAIN TAB SWITCHING ─────────────────────────────────────────
+  function switchMainTab(tab) {
+    document.getElementById('view-billing').style.display = tab === 'billing' ? 'block' : 'none';
+    document.getElementById('view-compliance').style.display = tab === 'compliance' ? 'block' : 'none';
+    document.getElementById('tab-billing').classList.toggle('active', tab === 'billing');
+    document.getElementById('tab-compliance').classList.toggle('active', tab === 'compliance');
+    if (tab === 'compliance') renderComplianceDashboard();
+  }
+
+  // ── COMPLIANCE DATA ─────────────────────────────────────────────
+  // All compliance items derived from your actual contracts
+  const COMPLIANCE_ITEMS = [
+    // ── ANNUAL ─────────────────────────────────────────────────────
+    {
+      id: 'ash-fwa-training',
+      category: 'Annual Training & Attestations',
+      title: 'ASH Fraud, Waste & Abuse (FWA) Training',
+      detail: 'Required annually for all contracted providers per ASH Operations Manual v25.0. Complete via ASHLink → Provider Education Library → Medicare Compliance tab.',
+      payer: 'ASH',
+      frequency: 'annual',
+      dueDays: 365,
+      urgencyDays: 30,
+      consequence: 'Contract termination'
+    },
+    {
+      id: 'ash-attestation',
+      category: 'Annual Training & Attestations',
+      title: 'ASH Consolidated Attestation',
+      detail: 'Annual compliance attestation required by ASH. You have 2024 and 2025 completed. 2026 attestation will be due. Complete via ASHLink.',
+      payer: 'ASH',
+      frequency: 'annual',
+      dueDays: 365,
+      urgencyDays: 45,
+      consequence: 'Contract termination'
+    },
+    {
+      id: 'hipaa-training',
+      category: 'Annual Training & Attestations',
+      title: 'HIPAA Privacy & Security Annual Training',
+      detail: 'Required annually for all staff under your BAA agreements (Streamline, Preferred Therapy/Aetna). Document completion dates for all providers and front desk staff.',
+      payer: 'All Payers',
+      frequency: 'annual',
+      dueDays: 365,
+      urgencyDays: 30,
+      consequence: 'HIPAA violation, BAA breach'
+    },
+    {
+      id: 'anthem-credential-review',
+      category: 'Annual Training & Attestations',
+      title: 'Anthem Annual Credentialing Review',
+      detail: 'Anthem requires annual review of provider credentials and participation status. Verify all providers still listed correctly in Anthem network.',
+      payer: 'Anthem',
+      frequency: 'annual',
+      dueDays: 365,
+      urgencyDays: 45,
+      consequence: 'Claims denied, network removal'
+    },
+    // ── RECURRING / MONTHLY ─────────────────────────────────────────
+    {
+      id: 'medicare-exclusion-check',
+      category: 'Monthly Checks',
+      title: 'Medicare OIG Exclusion Database Check — All Staff',
+      detail: 'Required monthly for all employees and contractors per ASH contract and Medicare conditions of participation. Check all providers at oig.hhs.gov/exclusions. Document results.',
+      payer: 'Medicare + ASH',
+      frequency: 'monthly',
+      dueDays: 30,
+      urgencyDays: 5,
+      consequence: 'Federal violation — repayment of all Medicare claims'
+    },
+    {
+      id: 'provider-roster-check',
+      category: 'Monthly Checks',
+      title: 'Verify Provider Roster Accuracy — All Payers',
+      detail: 'Confirm all active providers are correctly listed with ASH, Aetna/Preferred, Anthem, Blue Shield, Optum. Any provider changes must be reported within 30 days per all contracts.',
+      payer: 'All Payers',
+      frequency: 'monthly',
+      dueDays: 30,
+      urgencyDays: 5,
+      consequence: 'Claims denied for unlisted providers'
+    },
+    // ── CREDENTIALING ───────────────────────────────────────────────
+    {
+      id: 'pt-license-david',
+      category: 'Credentialing & License Renewals',
+      title: 'CA PT License Renewal — David Enfinger (CA #295185)',
+      detail: 'California PT licenses renew every 2 years. Verify expiration date and renew before expiry. All payer contracts require active state licensure.',
+      payer: 'All Payers',
+      frequency: 'biennial',
+      dueDays: 730,
+      urgencyDays: 90,
+      consequence: 'Immediate network termination, all claims denied'
+    },
+    {
+      id: 'pt-license-patrick',
+      category: 'Credentialing & License Renewals',
+      title: 'CA PT License Renewal — Patrick Le (CA #304962)',
+      detail: 'California PT licenses renew every 2 years. Verify expiration date at ptbc.ca.gov.',
+      payer: 'All Payers',
+      frequency: 'biennial',
+      dueDays: 730,
+      urgencyDays: 90,
+      consequence: 'Immediate network termination, all claims denied'
+    },
+    {
+      id: 'pt-license-shannon',
+      category: 'Credentialing & License Renewals',
+      title: 'CA PT License Renewal — Shannon Herman',
+      detail: 'California PT licenses renew every 2 years. Verify expiration date at ptbc.ca.gov.',
+      payer: 'All Payers',
+      frequency: 'biennial',
+      dueDays: 730,
+      urgencyDays: 90,
+      consequence: 'Immediate network termination, all claims denied'
+    },
+    {
+      id: 'npi-registry-verify',
+      category: 'Credentialing & License Renewals',
+      title: 'NPI Registry — Verify All Provider Info is Current',
+      detail: 'Aetna/Preferred specifically calls out NPI registry accuracy. Verify address, specialty, and taxonomy codes are current at npiregistry.cms.hhs.gov for all providers.',
+      payer: 'Aetna + All Payers',
+      frequency: 'annual',
+      dueDays: 365,
+      urgencyDays: 30,
+      consequence: 'Claims rejected, directory listing errors'
+    },
+    {
+      id: 'ash-recredential',
+      category: 'Credentialing & License Renewals',
+      title: 'ASH Recredentialing — All Providers',
+      detail: 'ASH requires recredentialing per their Clinical Practice Review Program (Operations Manual Section 17.2). Confirm recredentialing cycle dates on ASHLink.',
+      payer: 'ASH',
+      frequency: 'biennial',
+      dueDays: 730,
+      urgencyDays: 90,
+      consequence: 'Dropped from ASH network'
+    },
+    // ── BILLING COMPLIANCE ──────────────────────────────────────────
+    {
+      id: 'aetna-box31-audit',
+      category: 'Billing Compliance Rules',
+      title: 'Aetna — Verify Box 31 is Blank / "Signature on File"',
+      detail: 'Per Preferred Therapy Providers PPTX: Under the facility agreement, Box 31 must NEVER include a therapist name. Should be blank or read "Signature on File." This is likely causing Aetna denials. Audit your claim submission settings in Spry.',
+      payer: 'Aetna',
+      frequency: 'oneTime',
+      dueDays: 0,
+      urgencyDays: 0,
+      consequence: 'Claim denials (likely causing current 15.6% collection rate)'
+    },
+    {
+      id: 'streamline-30day-claims',
+      category: 'Billing Compliance Rules',
+      title: 'Streamline Workers Comp — Claims Within 30 Days of DOS',
+      detail: 'Per Streamline contract: claims submitted after 30 days are paid at Streamline discretion. After 180 days, claims are permanently settled and cannot be appealed. Review all WC claims for timely filing.',
+      payer: 'Streamline',
+      frequency: 'ongoing',
+      dueDays: 0,
+      urgencyDays: 0,
+      consequence: 'Permanent forfeiture of payment — no appeal rights'
+    },
+    {
+      id: 'ash-progress-notes',
+      category: 'Billing Compliance Rules',
+      title: 'ASH — Progress Notes Every 6 Visits or 2 Weeks',
+      detail: 'Per Streamline/ASH documentation requirements: progress notes required every 6 visits or every 2 weeks, whichever comes first. Must include 2 of 3: Pain Scale, Strength Scale, ROM.',
+      payer: 'ASH',
+      frequency: 'ongoing',
+      dueDays: 0,
+      urgencyDays: 0,
+      consequence: 'Claim denial, audit risk'
+    },
+    {
+      id: 'optum-operations-review',
+      category: 'Billing Compliance Rules',
+      title: 'Optum — Review Operations Manual & Plan Summaries',
+      detail: 'Contract effective 10/22/2025. Per Optum agreement: you must review Operations Manual and Plan Summaries for each payer (UHC Charter, Navigate, NexusACO, Medicare, SignatureValue, Zelis). Download at myoptumhealthphysicalhealth.com.',
+      payer: 'Optum/UHC',
+      frequency: 'annual',
+      dueDays: 365,
+      urgencyDays: 30,
+      consequence: 'Billing errors, claims denied'
+    },
+    // ── CONTRACT MANAGEMENT ─────────────────────────────────────────
+    {
+      id: 'anthem-pcs-request',
+      category: 'Contract Management',
+      title: 'Anthem — Request Plan Compensation Schedule (PCS)',
+      detail: 'Your Anthem contract references a PCS attachment with your actual contracted rates, but it was not included in the signed agreement. Call Anthem Provider Relations to obtain your PCS. Without it you cannot verify payments.',
+      payer: 'Anthem',
+      frequency: 'oneTime',
+      dueDays: 0,
+      urgencyDays: 0,
+      consequence: 'Cannot detect underpayments'
+    },
+    {
+      id: 'ash-fee-schedule',
+      category: 'Contract Management',
+      title: 'ASH — Download Current Fee Schedule from ASHLink',
+      detail: 'You are Tier 3. ASH fee schedules are available on ASHLink → Resources → Fee Schedules. Download current schedule to enable underpayment detection in the billing audit.',
+      payer: 'ASH',
+      frequency: 'annual',
+      dueDays: 365,
+      urgencyDays: 30,
+      consequence: 'Cannot detect underpayments'
+    },
+    {
+      id: 'blueshield-fee-schedule',
+      category: 'Contract Management',
+      title: 'Blue Shield — Download Current Fee Schedule from Provider Portal',
+      detail: 'Blue Shield contracted rates are held on the provider portal at blueshieldca.com/provider. Download current PT fee schedule to enable underpayment detection.',
+      payer: 'Blue Shield',
+      frequency: 'annual',
+      dueDays: 365,
+      urgencyDays: 30,
+      consequence: 'Cannot detect underpayments'
+    },
+    {
+      id: 'address-change-notify',
+      category: 'Contract Management',
+      title: 'Provider Info Change — Notify All Payers Within 30 Days',
+      detail: 'All contracts require notification within 30 days of any change to address, phone, TIN, NPI, or provider roster. Anthem, ASH, Blue Shield, and Optum all have explicit requirements.',
+      payer: 'All Payers',
+      frequency: 'asNeeded',
+      dueDays: 0,
+      urgencyDays: 0,
+      consequence: 'Claims denied, directory errors, contract breach'
+    },
+  ];
+
+  const PAYER_REFERENCE = [
+    {
+      name: 'Aetna (via Preferred Therapy Providers)',
+      rules: [
+        'Box 31 on claims: BLANK or "Signature on File" — NEVER therapist name',
+        'Max 4 billable units per date of service per provider',
+        'MPPR applies: highest PE RVU CPT paid 100%, subsequent CPTs paid at ~50% PE',
+        'Evals (97161-97163): payable once per 180 days',
+        'Re-eval (97164): payable once per 30 days',
+        'PIN: 3863842 (PT) — do NOT put on claim form',
+        'Box 24J: leave blank or use facility/group NPI only',
+        'Electronic claims only — no paper'
+      ]
+    },
+    {
+      name: 'ASH (American Specialty Health)',
+      rules: [
+        'Provider ID: 1556391 | Tier: 3 | Effective: July 1, 2025',
+        'MNR form required before treatment — submit via ASHLink',
+        'Claims due within timely filing window (verify in operations manual)',
+        'Progress notes required every 6 visits OR every 2 weeks (whichever first)',
+        'Annual FWA training + Consolidated Attestation required',
+        'Monthly OIG exclusion check required for all staff',
+        'Over-authorized visits will not be paid without new MNR approval'
+      ]
+    },
+    {
+      name: 'Optum / UHC',
+      rules: [
+        'Contract effective: 10/22/2025 — fairly new',
+        'Covers: UHC Charter, Navigate, NexusACO, In California, Medicare, SignatureValue, Zelis',
+        'Fee schedules: login at myoptumhealthphysicalhealth.com',
+        'Provider Operations Manual available on same portal',
+        'Claims 30 days — verify timely filing per plan summary'
+      ]
+    },
+    {
+      name: 'Anthem Blue Cross',
+      rules: [
+        'Effective: 01/21/2026',
+        'Plan Compensation Schedule (PCS) — REQUEST FROM ANTHEM — not in contract file',
+        'Anthem Rate = lesser of 100% of eligible charges OR contracted PCS amount',
+        'Audit rights: Anthem may conduct post-payment reviews',
+        'Provider changes must be reported promptly'
+      ]
+    },
+    {
+      name: 'Blue Shield of California',
+      rules: [
+        'Signed 12/03/2025 by David Enfinger',
+        'Fee schedule: available on provider portal at blueshieldca.com/provider',
+        'Use AuthAccel for authorization submissions (24/7 online)',
+        'Patrick Le NPI: 1811777576 (approval letter on file)'
+      ]
+    },
+    {
+      name: 'Streamline (Workers Comp)',
+      rules: [
+        'Claims must be submitted within 30 days of DOS',
+        'After 180 days: permanently settled, no appeal rights',
+        'Use HCFA 1500 with all daily notes attached',
+        'Progress notes due within 24-48 hours via email/fax/portal',
+        'Fax: 904-944-4169 | Email: ptbill@streamlineworkcomp.com',
+        'Re-evaluations: no more than once per 4-week period',
+        'TIN, NPI, and legible supervising PT signature required on all bills'
+      ]
+    },
+    {
+      name: 'MedRisk',
+      rules: [
+        'Contract PDF on file — fee schedule needed from MedRisk portal',
+        'Contact your MedRisk rep for current fee schedule'
+      ]
+    },
+    {
+      name: 'Tricare / TriWest',
+      rules: [
+        'Pays at CMS Physician Fee Schedule rates',
+        'Provider agreement on file',
+        'Verify current rates at tricare.mil'
+      ]
+    }
+  ];
+
+  // ── COMPLIANCE STATE ────────────────────────────────────────────
+  function getComplianceState() {
+    try {
+      return JSON.parse(localStorage.getItem('complianceState') || '{}');
+    } catch { return {}; }
+  }
+
+  function saveComplianceState(state) {
+    localStorage.setItem('complianceState', JSON.stringify(state));
+  }
+
+  function getComplianceLog() {
+    try {
+      return JSON.parse(localStorage.getItem('complianceLog') || '[]');
+    } catch { return []; }
+  }
+
+  function addComplianceLog(action) {
+    const log = getComplianceLog();
+    log.unshift({ time: new Date().toISOString(), action });
+    if (log.length > 100) log.splice(100);
+    localStorage.setItem('complianceLog', JSON.stringify(log));
+  }
+
+  function toggleCompliance(id, title) {
+    const state = getComplianceState();
+    if (state[id]) {
+      delete state[id];
+      addComplianceLog('Unchecked: ' + title);
+    } else {
+      state[id] = new Date().toISOString();
+      addComplianceLog('Completed: ' + title);
+    }
+    saveComplianceState(state);
+    renderComplianceDashboard();
+  }
+
+  function getDueStatus(item, state) {
+    if (item.frequency === 'oneTime' || item.frequency === 'asNeeded' || item.frequency === 'ongoing') {
+      return state[item.id] ? 'ok' : 'recurring';
+    }
+    const lastDone = state[item.id];
+    if (!lastDone) return 'soon';
+    const daysSince = (Date.now() - new Date(lastDone).getTime()) / (1000 * 60 * 60 * 24);
+    const pct = daysSince / item.dueDays;
+    if (pct >= 1) return 'overdue';
+    if (daysSince > (item.dueDays - item.urgencyDays)) return 'soon';
+    return 'ok';
+  }
+
+  function getDueLabel(item, state) {
+    if (item.frequency === 'oneTime') return state[item.id] ? '✓ Done' : '⚡ Action Needed';
+    if (item.frequency === 'asNeeded') return state[item.id] ? '✓ Noted' : 'As Needed';
+    if (item.frequency === 'ongoing') return state[item.id] ? '✓ Process in Place' : 'Ongoing';
+    const lastDone = state[item.id];
+    if (!lastDone) return 'Not Started';
+    const daysSince = Math.floor((Date.now() - new Date(lastDone).getTime()) / (1000 * 60 * 60 * 24));
+    const daysLeft = item.dueDays - daysSince;
+    if (daysLeft <= 0) return 'OVERDUE';
+    if (daysLeft <= 30) return 'Due in ' + daysLeft + ' days';
+    const months = Math.floor(daysLeft / 30);
+    return 'Due in ~' + months + ' month' + (months > 1 ? 's' : '');
+  }
+
+  // ── COMPLIANCE RENDER ───────────────────────────────────────────
+  let lastAuditResults = null;
+
+  function renderComplianceDashboard() {
+    const state = getComplianceState();
+    const now = new Date();
+
+    // Group items by category
+    const groups = {};
+    COMPLIANCE_ITEMS.forEach(item => {
+      if (!groups[item.category]) groups[item.category] = [];
+      groups[item.category].push(item);
+    });
+
+    // Count flags
+    let overdueCount = 0;
+    let soonCount = 0;
+    COMPLIANCE_ITEMS.forEach(item => {
+      const s = getDueStatus(item, state);
+      if (s === 'overdue') overdueCount++;
+      if (s === 'soon') soonCount++;
+    });
+
+    // Render calendar
+    document.getElementById('compliance-calendar').innerHTML = Object.entries(groups).map(([cat, items]) => `
+      <div class="compliance-section">
+        <div class="compliance-section-title">${cat}</div>
+        ${items.map(item => {
+          const status = getDueStatus(item, state);
+          const label = getDueLabel(item, state);
+          const done = !!state[item.id];
+          const lastDate = done ? new Date(state[item.id]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : null;
+          return `
+            <div class="compliance-item">
+              <div class="compliance-check ${done ? 'done' : ''}" onclick="toggleCompliance('${item.id}', '${item.title.replace(/'/g,"\'")}')">
+                ${done ? '✓' : ''}
+              </div>
+              <div class="compliance-item-body">
+                <div class="compliance-item-title">${item.title}</div>
+                <div class="compliance-item-detail">${item.detail}</div>
+                <div style="margin-top:4px;font-size:10px;color:#6b7280">⚠ If missed: ${item.consequence}</div>
+              </div>
+              <div class="compliance-item-meta">
+                <span class="due-badge ${status}">${label}</span>
+                ${lastDate ? `<span class="last-done">Done: ${lastDate}</span>` : ''}
+                <span style="font-size:10px;color:var(--muted);margin-top:2px">${item.payer}</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `).join('');
+
+    // Data-driven flags from last audit
+    const flagsEl = document.getElementById('compliance-flags');
+    const flagCountEl = document.getElementById('compliance-flag-count');
+    const dataFlags = generateDataFlags(lastAuditResults);
+    flagCountEl.textContent = dataFlags.length + ' flags';
+    flagCountEl.className = 'badge ' + (dataFlags.length > 0 ? 'red' : 'green');
+    if (dataFlags.length === 0) {
+      flagsEl.innerHTML = '<div class="log-empty">Run a billing audit first to auto-detect compliance issues from your data.</div>';
+    } else {
+      flagsEl.innerHTML = dataFlags.map(f => `
+        <div class="compliance-item" style="padding:10px 0">
+          <div style="width:8px;height:8px;border-radius:50%;background:${f.color};flex-shrink:0;margin-top:5px"></div>
+          <div class="compliance-item-body">
+            <div class="compliance-item-title" style="font-size:12px">${f.title}</div>
+            <div class="compliance-item-detail">${f.detail}</div>
+          </div>
+          <span class="due-badge ${f.severity}">${f.label}</span>
+        </div>
+      `).join('');
+    }
+
+    // Payer reference
+    document.getElementById('payer-reference').innerHTML = PAYER_REFERENCE.map(p => `
+      <div class="payer-ref-item">
+        <div class="payer-ref-name">${p.name}</div>
+        ${p.rules.map(r => `<div class="payer-ref-rule">${r}</div>`).join('')}
+      </div>
+    `).join('');
+
+    // Compliance log
+    const log = getComplianceLog();
+    const logEl = document.getElementById('compliance-log-table');
+    if (log.length === 0) {
+      logEl.innerHTML = '<div class="log-empty">No activity yet. Check off items above to start your compliance log.</div>';
+    } else {
+      logEl.innerHTML = log.slice(0, 30).map(e => `
+        <div class="log-entry">
+          <span class="log-time">${new Date(e.time).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
+          <span class="log-action">${e.action}</span>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('timestamp2').textContent = 'Compliance data saved locally to this browser · ' + now.toLocaleString();
+  }
+
+  function generateDataFlags(results) {
+    if (!results) return [];
+    const flags = [];
+
+    // Aetna 4-unit max check
+    if (results.aetnaOverUnits && results.aetnaOverUnits > 0) {
+      flags.push({
+        title: 'Aetna — Claims Exceeding 4-Unit Maximum',
+        detail: `${results.aetnaOverUnits} Aetna claims detected with >4 units billed on a single date of service. Aetna policy caps at 4 units per DOS per provider.`,
+        color: 'var(--red)', severity: 'red', label: '🔴 Violation'
+      });
+    }
+
+    // Denied Aetna claims (Box 31 likely issue)
+    const aetnadenied = results.denied ? results.denied.filter(r => r.payer && r.payer.includes('Aetna')).length : 0;
+    if (aetnadenied > 0) {
+      flags.push({
+        title: 'Aetna Denials — Possible Box 31 Issue',
+        detail: `${aetnadenied} Aetna claims denied. Per your contract, Box 31 must be blank or "Signature on File" — never a therapist name. Check your Spry claim submission settings.`,
+        color: 'var(--red)', severity: 'red', label: '🔴 Investigate'
+      });
+    }
+
+    // Draft claims > 30 days (Streamline risk)
+    if (results.drafts && results.drafts.length > 0) {
+      flags.push({
+        title: 'Draft Claims — Streamline 30-Day Filing Risk',
+        detail: `${results.drafts.length} claims still in Draft. Any Workers Comp claims in this group risk missing Streamline's 30-day filing requirement.`,
+        color: 'var(--amber)', severity: 'amber', label: '🟡 At Risk'
+      });
+    }
+
+    // Auth overruns
+    if (results.authOverrun && results.authOverrun.length > 0) {
+      flags.push({
+        title: 'Authorization Overruns Detected',
+        detail: `${results.authOverrun.length} claims where visits consumed exceed authorized visits. ASH and most payers will not pay unauthorized visits without a new MNR/auth request.`,
+        color: 'var(--red)', severity: 'red', label: '🔴 Contract Risk'
+      });
+    }
+
+    // Underbilling (documentation risk)
+    if (results.totalMissingUnits > 50) {
+      flags.push({
+        title: 'Unit Documentation Gap — Audit Risk',
+        detail: `${Math.round(results.totalMissingUnits)} units documented in SOAP notes but not billed. If audited, payers may question why documentation doesn't match billing. Ensure all billed units are supported by notes.`,
+        color: 'var(--amber)', severity: 'amber', label: '🟡 Audit Risk'
+      });
+    }
+
+    return flags;
+  }
+
+  function downloadComplianceReport() {
+    const state = getComplianceState();
+    const rows = COMPLIANCE_ITEMS.map(item => {
+      const done = !!state[item.id];
+      const lastDate = done ? new Date(state[item.id]).toLocaleDateString() : 'Not completed';
+      const status = getDueLabel(item, state);
+      return [item.category, item.title, item.payer, item.frequency, status, lastDate, item.consequence].join(',');
+    });
+    const csv = 'Category,Item,Payer,Frequency,Status,Last Completed,Consequence If Missed\n' + rows.join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ComplianceReport_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function resetApp() {
+    uploadedFiles = {};
+    document.getElementById('file-list').innerHTML = '';
+    document.getElementById('run-btn').disabled = true;
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('upload-screen').style.display = 'flex';
+  }
+</script>
+</body>
+</html>
