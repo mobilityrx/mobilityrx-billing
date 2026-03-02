@@ -779,6 +779,65 @@
   .step-detail { font-size: 11px; color: var(--muted); line-height: 1.6; }
   .step-detail strong { color: var(--text); }
 
+  /* ── ERA / EOB / UNDERPAYMENT TABS ─────────────────────────── */
+  .era-upload-zone{border:2px dashed var(--border);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;background:var(--surface2);}
+  .era-upload-zone:hover,.era-upload-zone.drag-over{border-color:var(--green);background:#0a2a1a;}
+  .era-upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .era-stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0;}
+  .era-stat{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;}
+  .era-stat-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px;}
+  .era-stat-value{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;}
+  .era-stat-value.green{color:var(--green);}.era-stat-value.amber{color:var(--amber);}.era-stat-value.red{color:var(--red);}.era-stat-value.blue{color:var(--blue);}
+  .claim-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
+  .claim-card-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;gap:12px;}
+  .claim-card-header:hover{background:rgba(255,255,255,0.02);}
+  .claim-id{font-family:'DM Mono',monospace;font-size:12px;background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:4px;}
+  .claim-body{padding:12px 16px;border-top:1px solid var(--border);display:none;}
+  .claim-body.open{display:block;}
+  .svc-line{display:grid;grid-template-columns:90px 1fr 90px 90px 90px 90px;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:center;}
+  .svc-line:last-child{border-bottom:none;}
+  .svc-line-header{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;}
+  .adj-code-tag{display:inline-block;background:#2a1f0a;color:var(--amber);border:1px solid #4a3a1a;padding:2px 8px;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;margin:2px;}
+  .adj-code-tag.pr{background:#0a1f2a;color:var(--blue);border-color:#1a3a4a;}
+  .adj-code-tag.oa{background:#1a1a2a;color:#9b9bff;border-color:#2a2a4a;}
+  .underpay-flag{background:#1f0a0a;border:1px solid #4a1a1a;border-radius:8px;padding:14px 16px;margin-bottom:10px;}
+  .underpay-flag-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .underpay-amount{font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--red);}
+  .underpay-detail{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.8;}
+  .ocr-log{background:#050708;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'DM Mono',monospace;font-size:11px;max-height:200px;overflow-y:auto;margin-top:10px;line-height:1.9;}
+  .log-ok{color:var(--green);}.log-warn{color:var(--amber);}.log-err{color:var(--red);}.log-info{color:var(--blue);}
+  .eob-table-wrap{overflow-x:auto;}
+  .eob-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .eob-table th{padding:8px 12px;background:var(--surface2);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);white-space:nowrap;text-align:left;}
+  .eob-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  .eob-table tr:last-child td{border-bottom:none;}
+  .eob-table tr:hover td{background:var(--surface2);}
+  .discrepancy-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace;}
+  .discrepancy-badge.match{background:#0a2a1a;color:var(--green);border:1px solid #1a4a2a;}
+  .discrepancy-badge.mismatch{background:#2a0f0f;color:var(--red);border:1px solid #4a1a1a;}
+  .discrepancy-badge.missing{background:#2a1f0a;color:var(--amber);border:1px solid #4a3a1a;}
+  .nav-tab{background:transparent;border:none;padding:0 16px;height:60px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;}
+  .nav-tab:hover{color:var(--text);}
+  .nav-tab.active{color:var(--text);border-bottom-color:var(--red);}
+  .nav-tab .tab-pill{background:var(--red);color:white;font-size:10px;font-family:'DM Mono',monospace;padding:1px 6px;border-radius:10px;margin-left:6px;}
+  .nav-tab .tab-pill.amber{background:var(--amber);color:#000;}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,214,143,0.2);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:6px;}
+  .spry-input{width:80px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:4px 6px;font-family:'DM Mono',monospace;font-size:11px;text-align:right;}
+  .spry-input:focus{outline:none;border-color:var(--blue);}
+  .fee-schedule-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px;}
+  .fee-schedule-table th{padding:7px 12px;background:var(--surface2);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);text-align:left;}
+  .fee-schedule-table td{padding:7px 12px;border-bottom:1px solid var(--border);}
+  .fee-schedule-table tr:last-child td{border-bottom:none;}
+  .fee-input{width:70px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:3px 6px;font-family:'DM Mono',monospace;font-size:11px;text-align:right;}
+  .fee-input:focus{outline:none;border-color:var(--green);}
+  .github-step{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+  .github-step:last-child{border-bottom:none;}
+  .github-step-num{width:26px;height:26px;border-radius:50%;background:var(--red);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-family:'DM Mono',monospace;}
+  .github-step-body{flex:1;}
+  .github-step-body h4{font-size:13px;font-weight:600;margin-bottom:4px;}
+  .github-step-body p{font-size:12px;color:var(--muted);line-height:1.6;}
+  .github-step-body code{background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;color:var(--blue);}
+
 </style>
   <script src="https://apis.google.com/js/api.js" async defer onerror="console.warn('Google API script failed to load')"></script>
   <script src="https://accounts.google.com/gsi/client" async defer onerror="console.warn('Google Identity Services failed to load')"></script>
@@ -972,7 +1031,11 @@
     <div class="topbar-brand">Mobility<span>Rx</span> Billing Audit</div>
     <div class="nav-tabs">
       <button class="nav-tab active" id="tab-billing" onclick="switchMainTab('billing')">📊 Billing Audit</button>
+      <button class="nav-tab" id="tab-era" onclick="switchMainTab('era')">📋 ERA / 835 <span class="tab-pill" id="era-pill" style="display:none">0</span></button>
+      <button class="nav-tab" id="tab-eob" onclick="switchMainTab('eob')">🔍 EOB OCR <span class="tab-pill amber" id="eob-pill" style="display:none">0</span></button>
+      <button class="nav-tab" id="tab-underpay" onclick="switchMainTab('underpay')">🚨 Underpayments <span class="tab-pill" id="underpay-pill" style="display:none">0</span></button>
       <button class="nav-tab" id="tab-compliance" onclick="switchMainTab('compliance')">✅ Compliance</button>
+      <button class="nav-tab" id="tab-github" onclick="switchMainTab('github')">🐙 GitHub Upload</button>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <div class="topbar-meta" id="audit-date"></div>
@@ -1143,6 +1206,203 @@
     <div class="timestamp" id="timestamp2"></div>
 
   </div><!-- /view-compliance -->
+
+  <!-- ERA / 835 TAB -->
+  <div id="view-era" style="display:none;" class="main">
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">📋 EDI X12 835 — Electronic Remittance Advice Parser</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="download-btn" onclick="loadSampleERA()">📄 Load Sample ERA</button>
+          <button class="download-btn" onclick="clearERAData()">✕ Clear</button>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:16px;">Upload .x12 or .835 files. Parser maps adjustment codes (CO-45, PR-2, CO-97, etc.) to plain English and cross-references against contracted fee schedules to auto-flag underpayments.</p>
+
+      <div class="era-upload-zone" id="era-drop" onclick="document.getElementById('era-file-input').click()">
+        <input type="file" id="era-file-input" accept=".x12,.835,.txt,.edi" multiple onchange="handleERAFiles(this.files)">
+        <div style="font-size:36px;margin-bottom:10px;">📄</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Drop .x12 or .835 ERA files here</div>
+        <div style="font-size:12px;color:var(--muted);">EDI X12 835 Electronic Remittance Advice · Multiple files supported</div>
+      </div>
+
+      <div id="era-progress" style="display:none;margin-top:12px;">
+        <div class="ocr-log" id="era-log"></div>
+      </div>
+    </div>
+
+    <div id="era-results" style="display:none;">
+      <div class="era-stat-row" id="era-stats"></div>
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">Parsed Claims</div>
+          <input style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;width:200px;outline:none;" placeholder="Search claim ID, payer..." id="era-search" oninput="filterERAClaims(this.value)">
+        </div>
+        <div id="era-claims-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EOB OCR TAB -->
+  <div id="view-eob" style="display:none;" class="main">
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">🔍 Scanned EOB / Remittance OCR Parser</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="download-btn" onclick="clearEOBData()">✕ Clear</button>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:16px;">Upload scanned EOB PDFs or images. OCR extracts payer, claim #, DOS, CPT codes, billed/allowed/paid/adjustment amounts and reason codes — normalized to the same format as the 835 parser so both feed the underpayment detection engine. Enter Spry received amounts to flag discrepancies.</p>
+
+      <div class="era-upload-zone" id="eob-drop" onclick="document.getElementById('eob-file-input').click()">
+        <input type="file" id="eob-file-input" accept=".pdf,.png,.jpg,.jpeg,.tiff,.tif" multiple onchange="handleEOBFiles(this.files)">
+        <div style="font-size:36px;margin-bottom:10px;">🖼</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Drop scanned EOB PDFs or images here</div>
+        <div style="font-size:12px;color:var(--muted);">Supports PDF, PNG, JPG, TIFF · OCR powered by Tesseract.js (runs locally, no data sent to any server)</div>
+      </div>
+
+      <div id="eob-progress" style="display:none;margin-top:12px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="spin" id="eob-spin"></span>
+          <span id="eob-status-text" style="font-size:13px;color:var(--green);">Initializing OCR engine...</span>
+        </div>
+        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;">
+          <div id="eob-progress-bar" style="height:100%;background:var(--green);border-radius:4px;width:0%;transition:width 0.4s;"></div>
+        </div>
+        <div class="ocr-log" id="eob-log"></div>
+      </div>
+    </div>
+
+    <div id="eob-results" style="display:none;">
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">Extracted EOB Claims</div>
+          <span style="font-size:12px;color:var(--muted);">Enter Spry received amounts to flag discrepancies</span>
+        </div>
+        <div class="eob-table-wrap">
+          <table class="eob-table" id="eob-claims-table">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Payer</th>
+                <th>Claim #</th>
+                <th>DOS</th>
+                <th>CPT</th>
+                <th>Billed</th>
+                <th>Allowed</th>
+                <th>Paid (EOB)</th>
+                <th>Adj Codes</th>
+                <th>Spry Received</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="eob-claims-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UNDERPAYMENT TAB -->
+  <div id="view-underpay" style="display:none;" class="main">
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">🚨 Underpayment Detection Engine</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="underpay-total-label" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--red);"></span>
+          <button class="download-btn" onclick="runUnderpaymentScan()">↻ Re-scan</button>
+          <button class="download-btn" onclick="exportUnderpayments()">⬇ Export CSV</button>
+        </div>
+      </div>
+
+      <div style="background:#0a1f2a;border:1px solid #1a3a4a;border-radius:8px;padding:14px;margin-bottom:16px;font-size:12px;color:var(--blue);">
+        ℹ Underpayments are flagged when <strong>actual paid amount &lt; contracted fee schedule rate</strong> and the difference is not fully explained by valid patient responsibility codes (PR-1, PR-2, PR-3 deductible/copay/coinsurance). Parse ERA or EOB files first, then configure fee schedules below, then click Re-scan.
+      </div>
+
+      <div class="era-stat-row" id="underpay-stats">
+        <div class="era-stat"><div class="era-stat-label">Total Flagged</div><div class="era-stat-value red" id="up-count">0</div></div>
+        <div class="era-stat"><div class="era-stat-label">$ Underpaid</div><div class="era-stat-value red" id="up-total">$0</div></div>
+        <div class="era-stat"><div class="era-stat-label">ERA Sources</div><div class="era-stat-value blue" id="up-era">0</div></div>
+        <div class="era-stat"><div class="era-stat-label">EOB Sources</div><div class="era-stat-value amber" id="up-eob">0</div></div>
+      </div>
+
+      <div id="underpay-list">
+        <div style="text-align:center;padding:40px;color:var(--muted);">Parse ERA or EOB files and configure fee schedules to detect underpayments.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">💰 Contracted Fee Schedules (for Underpayment Detection)</div>
+        <button class="download-btn" onclick="saveFeeSchedules()">💾 Save</button>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:16px;">Edit these to match your actual contracted rates. Used to detect when payers pay below contract. Rates saved locally in browser.</p>
+      <div id="fee-schedule-editor"></div>
+    </div>
+  </div>
+
+  <!-- GITHUB UPLOAD TAB -->
+  <div id="view-github" style="display:none;" class="main">
+    <div class="panel">
+      <div class="section-header">
+        <div class="section-title">🐙 Upload to GitHub — mobilityrx-billing</div>
+      </div>
+
+      <div style="background:#0a1f2a;border:1px solid #1a3a4a;border-radius:8px;padding:14px;margin-bottom:20px;font-size:12px;color:var(--blue);">
+        ℹ The <strong>Upload files</strong> button only appears at the repo root level. The steps below show the easiest way to replace the existing file in GitHub.
+      </div>
+
+      <div>
+        <div class="github-step">
+          <div class="github-step-num">1</div>
+          <div class="github-step-body">
+            <h4>Download this updated file</h4>
+            <p>Click the button below to download the current version of <code>MobilityRx_Billing_Auditor.html</code> to your computer.</p>
+            <button class="run-btn" style="margin-top:10px;padding:10px 24px;font-size:13px;" onclick="downloadThisFile()">⬇ Download MobilityRx_Billing_Auditor.html</button>
+          </div>
+        </div>
+        <div class="github-step">
+          <div class="github-step-num">2</div>
+          <div class="github-step-body">
+            <h4>Go to your GitHub repository</h4>
+            <p>Navigate to <code>github.com/mobilityrx/mobilityrx-billing</code> and make sure you're on the <code>main</code> branch.</p>
+          </div>
+        </div>
+        <div class="github-step">
+          <div class="github-step-num">3</div>
+          <div class="github-step-body">
+            <h4>Click the existing file to open it</h4>
+            <p>Click <code>MobilityRx_Billing_Auditor.html</code> in the file list. You'll see the file contents preview.</p>
+          </div>
+        </div>
+        <div class="github-step">
+          <div class="github-step-num">4</div>
+          <div class="github-step-body">
+            <h4>Click the Edit (✏️ pencil) icon</h4>
+            <p>Top-right of the file preview. This opens the web editor. If you don't see it, click the <strong>⋯ kebab menu → Edit</strong>.</p>
+          </div>
+        </div>
+        <div class="github-step">
+          <div class="github-step-num">5</div>
+          <div class="github-step-body">
+            <h4>Select All → Paste new content</h4>
+            <p>Press <code>Ctrl+A</code> (Windows) or <code>Cmd+A</code> (Mac) to select all text, then paste the contents of the downloaded file.</p>
+          </div>
+        </div>
+        <div class="github-step">
+          <div class="github-step-num">6</div>
+          <div class="github-step-body">
+            <h4>Commit changes</h4>
+            <p>Scroll down → add commit message: <code>Add ERA/835 parser + EOB OCR + underpayment detection v2.1</code> → click <strong>Commit changes</strong>. Done! ✅</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#1a2a0a;border:1px solid #2a4a1a;border-radius:8px;padding:14px;margin-top:16px;font-size:12px;color:var(--muted);">
+        <strong style="color:var(--green);">Alternative — drag &amp; drop:</strong> To upload as a new file instead, go to the <strong>repo root</strong> → click <strong>Add file → Upload files</strong>. This button only appears at the root level, not inside subfolders. GitHub will prompt you to replace the existing file.
+      </div>
+    </div>
+  </div>
 
 </div><!-- /dashboard -->
 
@@ -2013,12 +2273,17 @@
   }
 
   // ── MAIN TAB SWITCHING ─────────────────────────────────────────
+  // (Extended version defined later in the file handles all tabs)
   function switchMainTab(tab) {
-    document.getElementById('view-billing').style.display = tab === 'billing' ? 'block' : 'none';
-    document.getElementById('view-compliance').style.display = tab === 'compliance' ? 'block' : 'none';
-    document.getElementById('tab-billing').classList.toggle('active', tab === 'billing');
-    document.getElementById('tab-compliance').classList.toggle('active', tab === 'compliance');
-    if (tab === 'compliance') renderComplianceDashboard();
+    const views = ['billing','compliance','era','eob','underpay','github'];
+    views.forEach(v => {
+      const el = document.getElementById('view-'+v);
+      if(el) el.style.display = (v===tab) ? 'block' : 'none';
+      const btn = document.getElementById('tab-'+v);
+      if(btn) btn.classList.toggle('active', v===tab);
+    });
+    if(tab==='compliance') renderComplianceDashboard();
+    if(tab==='underpay') renderFeeScheduleEditor();
   }
 
   // ── COMPLIANCE DATA ─────────────────────────────────────────────
@@ -2565,6 +2830,812 @@
     document.getElementById('dashboard').style.display = 'none';
     document.getElementById('upload-screen').style.display = 'flex';
   }
+
+  // ══════════════════════════════════════════════════════════════
+  // ADJUSTMENT REASON CODE DICTIONARY
+  // ══════════════════════════════════════════════════════════════
+  const ADJ_CODES = {
+    'CO-1':  {grp:'CO', pr:false, desc:'Deductible amount — contractual obligation'},
+    'CO-2':  {grp:'CO', pr:false, desc:'Coinsurance — contractual write-off'},
+    'CO-3':  {grp:'CO', pr:false, desc:'Co-payment — contractual write-off'},
+    'CO-4':  {grp:'CO', pr:false, desc:'Service/equipment not covered under this plan'},
+    'CO-5':  {grp:'CO', pr:false, desc:'Procedure code/modifier mismatch — resubmit corrected'},
+    'CO-6':  {grp:'CO', pr:false, desc:'Duplicate claim or service already adjudicated'},
+    'CO-18': {grp:'CO', pr:false, desc:'Duplicate claim — already processed'},
+    'CO-22': {grp:'CO', pr:false, desc:'Coordination of benefits — may be covered by another payer'},
+    'CO-45': {grp:'CO', pr:false, desc:'Charge exceeds fee schedule/maximum allowable — contractual write-off required. Do NOT bill patient.', important:true},
+    'CO-49': {grp:'CO', pr:false, desc:'Service not covered for this patient age'},
+    'CO-50': {grp:'CO', pr:false, desc:'Non-covered — not medically necessary per payer criteria'},
+    'CO-55': {grp:'CO', pr:false, desc:'Procedure not treated as separate/distinct service (bundled)'},
+    'CO-56': {grp:'CO', pr:false, desc:'Procedure code billed incorrectly — resubmit corrected claim'},
+    'CO-97': {grp:'CO', pr:false, desc:'Payment included in allowance for another already-adjudicated service (bundled/MPPR)', important:true},
+    'CO-109':{grp:'CO', pr:false, desc:'Not covered by this payer — resubmit to correct payer'},
+    'CO-119':{grp:'CO', pr:false, desc:'Benefit maximum for this period has been reached'},
+    'CO-167':{grp:'CO', pr:false, desc:'Diagnosis(es) not covered, missing, or invalid'},
+    'CO-170':{grp:'CO', pr:false, desc:'Payment denied/reduced — precertification/authorization absent or exceeded'},
+    'CO-197':{grp:'CO', pr:false, desc:'Precertification/authorization/notification absent'},
+    'CO-252':{grp:'CO', pr:false, desc:'Attachment or additional documentation required to process claim'},
+    'PR-1':  {grp:'PR', pr:true,  desc:'Deductible — patient owes this amount'},
+    'PR-2':  {grp:'PR', pr:true,  desc:'Coinsurance — patient owes their percentage of the allowed amount', important:true},
+    'PR-3':  {grp:'PR', pr:true,  desc:'Co-pay — patient owes fixed co-payment amount'},
+    'PR-96': {grp:'PR', pr:true,  desc:'Non-covered charge — patient responsibility'},
+    'PR-119':{grp:'PR', pr:true,  desc:'Benefit maximum reached — patient responsible for remaining charges'},
+    'PR-204':{grp:'PR', pr:true,  desc:'Not an insured benefit — patient responsibility'},
+    'OA-18': {grp:'OA', pr:false, desc:'Duplicate claim/service'},
+    'OA-23': {grp:'OA', pr:false, desc:'Payment adjusted per predetermination of benefits'},
+    'OA-94': {grp:'OA', pr:false, desc:'Processed in excess of charges'},
+    'OA-125':{grp:'OA', pr:false, desc:'Submission/billing error — remark code required'},
+    'OA-136':{grp:'OA', pr:false, desc:'Failure to follow prior payer coverage determination'},
+  };
+
+  function getAdjInfo(rawCode) {
+    const clean = (rawCode||"").toUpperCase().trim();
+    if(ADJ_CODES[clean]) return ADJ_CODES[clean];
+    // Try variations like "45" -> "CO-45"
+    const tryCO = 'CO-'+clean.replace(/^[A-Z]+-/,'');
+    if(ADJ_CODES[tryCO]) return ADJ_CODES[tryCO];
+    const grp = clean.startsWith('PR') ? 'PR' : clean.startsWith('OA') ? 'OA' : 'CO';
+    return {grp, pr: grp==='PR', desc: 'Adjustment code: '+rawCode};
+  }
+
+  function adjTagHTML(code) {
+    const info = getAdjInfo(code);
+    const cls = info.grp==='PR' ? ' pr' : info.grp==='OA' ? ' oa' : '';
+    return `<span class="adj-code-tag${cls}" title="${info.desc}">${code}</span>`;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // DEFAULT FEE SCHEDULES
+  // ══════════════════════════════════════════════════════════════
+  const DEFAULT_FEE_SCHEDULES = {
+    'Medicare': {'97110':45.00,'97530':50.00,'97116':40.00,'97035':35.00,'97012':28.00,'97014':22.00,'97032':30.00,'97001':80.00,'97002':55.00,'97003':85.00,'97004':57.00,'97150':40.00,'97140':48.00,'97161':110.00,'97162':105.00,'97163':100.00,'97164':75.00,'97165':115.00,'97166':110.00,'97167':105.00,'97168':78.00},
+    'Medicaid': {'97110':35.00,'97530':38.00,'97116':32.00,'97035':28.00,'97012':22.00,'97014':18.00,'97001':65.00,'97002':45.00,'97003':70.00,'97004':48.00,'97161':90.00,'97162':85.00,'97163':80.00,'97164':60.00,'97165':95.00,'97166':90.00,'97167':85.00,'97168':62.00},
+    'Aetna':    {'97110':52.00,'97530':58.00,'97116':47.00,'97035':40.00,'97001':92.00,'97002':62.00,'97140':55.00,'97161':125.00,'97162':120.00,'97163':115.00,'97164':86.00,'97165':130.00,'97166':125.00,'97167':120.00},
+    'BCBS':     {'97110':55.00,'97530':62.00,'97116':50.00,'97035':42.00,'97001':95.00,'97002':65.00,'97140':58.00,'97161':130.00,'97162':125.00,'97163':120.00,'97164':90.00,'97165':135.00,'97166':130.00,'97167':125.00},
+    'UnitedHealth':{'97110':50.00,'97530':56.00,'97116':45.00,'97035':38.00,'97001':90.00,'97002':60.00,'97140':54.00,'97161':122.00,'97162':117.00,'97163':112.00,'97164':83.00,'97165':127.00,'97166':122.00,'97167':117.00},
+    'ASH':      {'97110':42.00,'97530':47.00,'97116':38.00,'97035':33.00,'97001':78.00,'97002':52.00,'97140':46.00,'97161':108.00,'97162':103.00,'97163':98.00,'97164':72.00,'97165':112.00,'97166':108.00,'97167':103.00},
+  };
+
+  function loadFeeSchedules() {
+    try { return JSON.parse(localStorage.getItem('feeSchedules') || 'null') || DEFAULT_FEE_SCHEDULES; } catch { return DEFAULT_FEE_SCHEDULES; }
+  }
+  function saveFeeSchedules() {
+    const tables = document.querySelectorAll('.fee-schedule-table');
+    const schedules = {};
+    tables.forEach(tbl => {
+      const payer = tbl.dataset.payer;
+      schedules[payer] = {};
+      tbl.querySelectorAll('tr[data-cpt]').forEach(row => {
+        const cpt = row.dataset.cpt;
+        const inp = row.querySelector('.fee-input');
+        if(inp) schedules[payer][cpt] = parseFloat(inp.value)||0;
+      });
+    });
+    localStorage.setItem('feeSchedules', JSON.stringify(schedules));
+    alert('✓ Fee schedules saved.');
+  }
+
+  function renderFeeScheduleEditor() {
+    const schedules = loadFeeSchedules();
+    const container = document.getElementById('fee-schedule-editor');
+    if(!container) return;
+    const cptNames = {'97161':'PT Eval Low','97162':'PT Eval Mod','97163':'PT Eval High','97164':'PT Re-Eval','97110':'Therapeutic Exercise','97530':'Therapeutic Activities','97116':'Gait Training','97140':'Manual Therapy','97035':'Ultrasound','97012':'Traction','97014':'E-Stim (unattended)','97001':'OT Eval','97002':'OT Re-Eval'};
+    let html = '';
+    for(const [payer, rates] of Object.entries(schedules)) {
+      html += `<div style="margin-bottom:20px;"><div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text);">${payer}</div>
+        <table class="fee-schedule-table" data-payer="${payer}"><thead><tr><th>CPT</th><th>Description</th><th>Contracted Rate</th></tr></thead><tbody>`;
+      for(const [cpt, rate] of Object.entries(rates)) {
+        html += `<tr data-cpt="${cpt}"><td style="font-family:'DM Mono',monospace;color:var(--blue);">${cpt}</td><td style="color:var(--muted);">${cptNames[cpt]||'—'}</td><td>$<input class="fee-input" value="${rate.toFixed(2)}"></td></tr>`;
+      }
+      html += '</tbody></table></div>';
+    }
+    container.innerHTML = html;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // EDI X12 835 PARSER
+  // ══════════════════════════════════════════════════════════════
+  let eraStore = [];
+
+  function addERALog(msg, cls) {
+    const el = document.getElementById('era-log');
+    if(!el) return;
+    el.innerHTML += `<div class="${cls||''}">${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function handleERAFiles(files) {
+    document.getElementById('era-progress').style.display = 'block';
+    addERALog('<span class="log-info">⟶ Processing '+files.length+' file(s)...</span>');
+    let done = 0;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const claims = parseX12_835(e.target.result, file.name);
+          eraStore = eraStore.concat(claims);
+          addERALog(`<span class="log-ok">✓ ${file.name} — ${claims.length} claims parsed</span>`);
+        } catch(err) {
+          addERALog(`<span class="log-err">✗ ${file.name} — parse error: ${err.message}</span>`);
+        }
+        done++;
+        if(done===files.length) {
+          renderERAResults();
+          updateNavPills();
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  function parseX12_835(text, filename) {
+    // Detect segment terminator (usually ~ possibly followed by newline)
+    const terminator = '~';
+    const segments = text.split(/~[\r\n]?/).map(s => s.trim()).filter(Boolean);
+    const claims = [];
+    let currentPayer = 'Unknown Payer';
+    let currentPayee = '';
+    let currentClaim = null;
+    let currentSL = null;
+    let checkNum = '';
+    let checkDate = '';
+    let checkAmt = 0;
+
+    for(const seg of segments) {
+      const els = seg.split('*');
+      const id = els[0];
+
+      if(id==='BPR') {
+        checkAmt = parseFloat(els[2])||0;
+        if(els[16]) checkDate = formatDate8(els[16]);
+      }
+      if(id==='TRN') checkNum = els[2]||'';
+      if(id==='N1') {
+        if(els[1]==='PR') currentPayer = els[2]||'Unknown Payer';
+        if(els[1]==='PE') currentPayee = els[2]||'';
+      }
+      if(id==='CLP') {
+        if(currentClaim) claims.push(currentClaim);
+        currentClaim = {
+          source:'ERA', filename, claimId:els[1]||'—',
+          status: clpStatus(els[2]), statusCode:els[2],
+          billed:parseFloat(els[3])||0, paid:parseFloat(els[4])||0,
+          patResp:parseFloat(els[5])||0, payerClaimId:els[7]||'',
+          payer:currentPayer, payee:currentPayee,
+          checkNum, checkDate, checkAmt,
+          dos:'', patientName:'', adjustments:[], serviceLines:[],
+        };
+        currentSL = null;
+      }
+      if(id==='NM1' && currentClaim) {
+        if(els[1]==='QC') currentClaim.patientName = ((els[4]||'')+' '+(els[3]||'')).trim();
+      }
+      if(id==='DTM' && currentClaim) {
+        if(els[1]==='232') currentClaim.dos = formatDate8(els[2]);
+        if(els[1]==='233' && !currentClaim.dos) currentClaim.dos = formatDate8(els[2]);
+      }
+      if(id==='SVC' && currentClaim) {
+        const svcParts = (els[1]||'').split(':');
+        currentSL = {
+          cpt: svcParts[1]||svcParts[0]||'',
+          modifier: svcParts[2]||'',
+          billed:parseFloat(els[2])||0,
+          paid:parseFloat(els[3])||0,
+          units:parseFloat(els[5])||1,
+          adjustments:[],
+        };
+        currentClaim.serviceLines.push(currentSL);
+      }
+      if(id==='CAS' && currentClaim) {
+        // CAS*group*code*amount[*qty*code*amount...]
+        let i=1;
+        while(i < els.length-1) {
+          const grp = els[i]||'';
+          const code = els[i+1]||'';
+          const amt = parseFloat(els[i+2])||0;
+          if(code) {
+            const fullCode = (grp+'-'+code).toUpperCase();
+            const info = getAdjInfo(fullCode);
+            const adj = {code:fullCode, amount:amt, ...info};
+            (currentSL ? currentSL.adjustments : currentClaim.adjustments).push(adj);
+          }
+          i += 3;
+        }
+      }
+    }
+    if(currentClaim) claims.push(currentClaim);
+
+    // Compute allowed = paid + non-PR adjustments (CO write-offs)
+    claims.forEach(claim => {
+      claim.serviceLines.forEach(sl => {
+        const coAdj = sl.adjustments.filter(a=>a.grp==='CO').reduce((s,a)=>s+a.amount,0);
+        sl.allowed = sl.paid + coAdj;
+      });
+      if(!claim.serviceLines.length) {
+        const coAdj = claim.adjustments.filter(a=>a.grp==='CO').reduce((s,a)=>s+a.amount,0);
+        claim.allowed = claim.paid + coAdj;
+      } else {
+        claim.allowed = claim.serviceLines.reduce((s,sl)=>s+sl.allowed,0);
+      }
+    });
+
+    return claims;
+  }
+
+  function clpStatus(code) {
+    return {'1':'Processed','2':'Processed as Secondary','3':'Processed as Tertiary','4':'Denied','5':'Pended','22':'Reversal','23':'Original'}[code] || 'Status '+code;
+  }
+
+  function formatDate8(d) {
+    if(!d||d.length<8) return d||'';
+    return d.slice(4,6)+'/'+d.slice(6,8)+'/'+d.slice(0,4);
+  }
+
+  function clearERAData() {
+    eraStore = [];
+    document.getElementById('era-results').style.display = 'none';
+    document.getElementById('era-progress').style.display = 'none';
+    document.getElementById('era-log').innerHTML = '';
+    updateNavPills();
+  }
+
+  function renderERAResults() {
+    if(!eraStore.length) return;
+    document.getElementById('era-results').style.display = 'block';
+
+    const totalBilled = eraStore.reduce((s,c)=>s+c.billed,0);
+    const totalPaid   = eraStore.reduce((s,c)=>s+c.paid,0);
+    const totalAllowed= eraStore.reduce((s,c)=>s+(c.allowed||c.paid),0);
+    const totalAdj    = totalBilled - totalAllowed;
+
+    document.getElementById('era-stats').innerHTML = `
+      <div class="era-stat"><div class="era-stat-label">Total Billed</div><div class="era-stat-value blue">${fmt(totalBilled)}</div></div>
+      <div class="era-stat"><div class="era-stat-label">Total Allowed</div><div class="era-stat-value">${fmt(totalAllowed)}</div></div>
+      <div class="era-stat"><div class="era-stat-label">Total Paid</div><div class="era-stat-value green">${fmt(totalPaid)}</div></div>
+      <div class="era-stat"><div class="era-stat-label">Total Adjusted</div><div class="era-stat-value amber">${fmt(totalAdj)}</div></div>
+    `;
+
+    const listEl = document.getElementById('era-claims-list');
+    listEl.innerHTML = eraStore.map((claim,idx) => {
+      const underpay = detectUnderpaymentForClaim(claim);
+      const flag = underpay ? `<span class="flag red">⚠ Underpaid ${fmt(underpay)}</span>` : `<span class="flag green">✓ OK</span>`;
+      const allAdj = [...claim.adjustments, ...claim.serviceLines.flatMap(s=>s.adjustments)];
+      const adjTags = [...new Set(allAdj.map(a=>a.code))].map(adjTagHTML).join('');
+      return `
+        <div class="claim-card">
+          <div class="claim-card-header" onclick="toggleClaimBody('era-cb-${idx}')">
+            <span class="claim-id">${claim.claimId}</span>
+            <span style="font-size:12px;color:var(--muted);">${claim.payer}</span>
+            <span style="font-size:12px;color:var(--muted);">${claim.patientName||'—'} · ${claim.dos||'—'}</span>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${adjTags}</div>
+            <div style="display:flex;gap:12px;align-items:center;flex-shrink:0;">
+              <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);">Billed: ${fmt(claim.billed)}</span>
+              <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--green);">Paid: ${fmt(claim.paid)}</span>
+              ${flag}
+              <span style="color:var(--muted);font-size:14px;">▾</span>
+            </div>
+          </div>
+          <div class="claim-body" id="era-cb-${idx}">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-family:'DM Mono',monospace;">
+              Check #${claim.checkNum} · ${claim.checkDate} · ${claim.status} · Payer Claim ID: ${claim.payerClaimId||'—'}
+            </div>
+            ${renderServiceLines(claim)}
+            ${renderAdjTable(allAdj)}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderServiceLines(claim) {
+    if(!claim.serviceLines.length) return '';
+    return `<div style="margin-bottom:12px;">
+      <div class="svc-line svc-line-header"><span>CPT</span><span>Description</span><span>Billed</span><span>Allowed</span><span>Paid</span><span>Adj Codes</span></div>
+      ${claim.serviceLines.map(sl => {
+        const allAdj = sl.adjustments.map(a=>adjTagHTML(a.code)).join('');
+        return `<div class="svc-line">
+          <span style="font-family:'DM Mono',monospace;color:var(--blue);">${sl.cpt}${sl.modifier?':'+sl.modifier:''}</span>
+          <span style="font-size:11px;color:var(--muted);">${cptName(sl.cpt)}</span>
+          <span style="font-family:'DM Mono',monospace;">${fmt(sl.billed)}</span>
+          <span style="font-family:'DM Mono',monospace;">${fmt(sl.allowed)}</span>
+          <span style="font-family:'DM Mono',monospace;color:var(--green);">${fmt(sl.paid)}</span>
+          <span>${allAdj||'—'}</span>
+        </div>`;
+      }).join('')}</div>`;
+  }
+
+  function renderAdjTable(adjs) {
+    if(!adjs.length) return '';
+    const unique = {};
+    adjs.forEach(a => {
+      if(!unique[a.code]) unique[a.code] = {code:a.code,amount:0,desc:a.desc,grp:a.grp};
+      unique[a.code].amount += a.amount;
+    });
+    return `<div style="margin-top:8px;">
+      <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Adjustment Breakdown</div>
+      ${Object.values(unique).map(a => {
+        const info = getAdjInfo(a.code);
+        const tag = adjTagHTML(a.code);
+        return `<div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+          <span style="flex-shrink:0;">${tag}</span>
+          <span style="font-family:'DM Mono',monospace;color:var(--red);flex-shrink:0;width:80px;">${fmt(a.amount)}</span>
+          <span style="color:var(--muted);line-height:1.5;">${info.desc}</span>
+          ${info.pr ? '<span class="flag amber" style="flex-shrink:0;">Patient Resp</span>' : ''}
+        </div>`;
+      }).join('')}</div>`;
+  }
+
+  function cptName(cpt) {
+    return {'97161':'PT Eval Low','97162':'PT Eval Mod','97163':'PT Eval High','97164':'PT Re-Eval','97110':'Therapeutic Exercise','97530':'Therapeutic Activities','97116':'Gait Training','97140':'Manual Therapy','97035':'Ultrasound','97012':'Traction','97014':'E-Stim (unattended)','97018':'Paraffin Bath','97032':'E-Stim (attended)','97001':'OT Eval','97002':'OT Re-Eval','97003':'OT Eval High','97150':'Therapeutic Procedure Group'}[cpt] || cpt;
+  }
+
+  function toggleClaimBody(id) {
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('open');
+  }
+
+  function filterERAClaims(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('#era-claims-list .claim-card').forEach(card => {
+      card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  function loadSampleERA() {
+    // Generate a realistic sample 835
+    const sample = `ISA*00*          *00*          *ZZ*PAYER123       *ZZ*PROVIDER456    *260301*1200*^*00501*000000001*0*P*:~
+GS*HP*PAYER123*PROVIDER456*20260301*1200*1*X*005010X221A1~
+ST*835*0001~
+BPR*I*1250.00*C*ACH*CCP*01*123456789*DA*987654321*20260228~
+TRN*1*ERA20260228001*1234567890~
+DTM*405*20260228~
+N1*PR*Blue Shield of California*XX*1234567890~
+N1*PE*MOBILITY RX PT*XX*9876543210~
+CLP*CLAIM001*1*350.00*280.50*0*12*BSC2026001~
+NM1*QC*1*SMITH*JOHN*A~
+DTM*232*20260115~
+SVC*HC:97163*225.00*189.00*0*1~
+CAS*CO*45*36.00~
+SVC*HC:97110*125.00*91.50*0*2~
+CAS*CO*45*25.00*CO*97*8.50~
+CLP*CLAIM002*4*280.00*0.00*280.00*12*BSC2026002~
+NM1*QC*1*JONES*MARY*B~
+DTM*232*20260118~
+SVC*HC:97161*180.00*0.00*0*1~
+CAS*CO*97*180.00~
+SVC*HC:97530*100.00*0.00*0*1~
+CAS*CO*4*100.00~
+CLP*CLAIM003*1*420.00*315.00*105.00*12*BSC2026003~
+NM1*QC*1*DAVIS*ROBERT*C~
+DTM*232*20260120~
+SVC*HC:97165*250.00*187.50*0*1~
+CAS*CO*45*52.50*PR*2*10.00~
+SVC*HC:97140*170.00*127.50*0*1~
+CAS*CO*45*32.50*PR*2*10.00~
+SE*28*0001~
+GE*1*1~
+IEA*1*000000001~`;
+    const blob = new Blob([sample], {type:'text/plain'});
+    const file = new File([blob], 'era_sample_20260228.x12', {type:'text/plain'});
+    handleERAFiles([file]);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // EOB OCR PARSER
+  // ══════════════════════════════════════════════════════════════
+  let eobStore = [];
+  let tesseractWorker = null;
+
+  function addEOBLog(msg, cls) {
+    const el = document.getElementById('eob-log');
+    if(!el) return;
+    el.innerHTML += `<div class="${cls||''}">${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  async function handleEOBFiles(files) {
+    if(!files.length) return;
+    document.getElementById('eob-progress').style.display = 'block';
+    const spin = document.getElementById('eob-spin');
+    const statusText = document.getElementById('eob-status-text');
+    const progressBar = document.getElementById('eob-progress-bar');
+
+    statusText.textContent = 'Loading Tesseract OCR engine (runs locally — no data sent anywhere)...';
+    addEOBLog('<span class="log-info">⟶ Initializing Tesseract.js OCR engine...</span>');
+
+    try {
+      // Load Tesseract from CDN
+      if(!window.Tesseract) {
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js');
+      }
+      const worker = await Tesseract.createWorker('eng', 1, {
+        logger: m => {
+          if(m.status==='recognizing text') {
+            progressBar.style.width = (m.progress*100).toFixed(0)+'%';
+          }
+        }
+      });
+      addEOBLog('<span class="log-ok">✓ OCR engine ready</span>');
+
+      for(let i=0; i<files.length; i++) {
+        const file = files[i];
+        statusText.textContent = `Processing ${i+1}/${files.length}: ${file.name}`;
+        progressBar.style.width = '0%';
+        addEOBLog(`<span class="log-info">⟶ Processing: ${file.name}</span>`);
+
+        try {
+          let imageData;
+          if(file.type==='application/pdf') {
+            imageData = await pdfToImage(file);
+            addEOBLog('<span class="log-info">  ↳ PDF converted to image</span>');
+          } else {
+            imageData = URL.createObjectURL(file);
+          }
+
+          const { data: { text } } = await worker.recognize(imageData);
+          addEOBLog(`<span class="log-ok">  ✓ OCR complete — ${text.length} characters extracted</span>`);
+
+          const extracted = parseEOBText(text, file.name);
+          eobStore = eobStore.concat(extracted);
+          addEOBLog(`<span class="log-ok">  ✓ Extracted ${extracted.length} claim line(s)</span>`);
+
+          if(imageData.startsWith('blob:')) URL.revokeObjectURL(imageData);
+        } catch(err) {
+          addEOBLog(`<span class="log-err">  ✗ Failed: ${err.message}</span>`);
+        }
+      }
+
+      await worker.terminate();
+      statusText.textContent = '✓ OCR complete';
+      spin.style.display = 'none';
+      progressBar.style.width = '100%';
+      renderEOBResults();
+      updateNavPills();
+    } catch(err) {
+      statusText.textContent = 'OCR engine failed to load — try again';
+      addEOBLog(`<span class="log-err">✗ OCR error: ${err.message}</span>`);
+    }
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function pdfToImage(file) {
+    // Use PDF.js to render first page to canvas
+    if(!window.pdfjsLib) {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({scale: 2.0});
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+    return canvas.toDataURL('image/png');
+  }
+
+  function parseEOBText(text, filename) {
+    const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
+    const results = [];
+
+    // Extract payer name (usually near top)
+    let payer = 'Unknown Payer';
+    const payerPatterns = [/blue\s*shield/i, /blue\s*cross/i, /aetna/i, /unitedhealth/i, /cigna/i, /humana/i, /anthem/i, /medicare/i, /medicaid/i, /ash\b/i, /optum/i, /tricare/i, /streamline/i];
+    for(const line of lines.slice(0,15)) {
+      for(const pat of payerPatterns) {
+        if(pat.test(line)) { payer = line.slice(0,60).trim(); break; }
+      }
+    }
+
+    // Extract claim number
+    let claimNum = '';
+    const claimMatch = text.match(/claim\s*(?:number|#|id|no\.?)[:\s#]*([A-Z0-9-]{6,20})/i);
+    if(claimMatch) claimNum = claimMatch[1];
+    if(!claimNum) {
+      const cnMatch = text.match(/\b([0-9]{8,15})\b/);
+      if(cnMatch) claimNum = cnMatch[1];
+    }
+
+    // Extract DOS
+    let dos = '';
+    const dosPatterns = [/(?:date\s*of\s*service|dos|service\s*date)[:\s]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i,
+                         /(\d{2}[\/-]\d{2}[\/-]\d{4})/];
+    for(const pat of dosPatterns) {
+      const m = text.match(pat);
+      if(m) { dos = m[1]; break; }
+    }
+
+    // Look for CPT code lines — pattern: 5-digit CPT followed by $ amounts
+    // Format varies by payer but typically: CPT  billed  allowed  paid  adj  reason
+    const cptLineRe = /\b(9[0-9]{4})\b[^\n]*(\$?[\d,]+\.\d{2})[^\n]*(\$?[\d,]+\.\d{2})[^\n]*(\$?[\d,]+\.\d{2})/g;
+    let match;
+    let found = false;
+
+    while((match = cptLineRe.exec(text)) !== null) {
+      const cpt = match[1];
+      const billed = parseMoney(match[2]);
+      const allowed = parseMoney(match[3]);
+      const paid = parseMoney(match[4]);
+      if(billed > 0 || paid > 0) {
+        found = true;
+        // Extract reason codes from surrounding text
+        const lineStart = text.lastIndexOf('\n', match.index)+1;
+        const lineEnd = text.indexOf('\n', match.index+match[0].length);
+        const fullLine = text.slice(lineStart, lineEnd>0?lineEnd:undefined);
+        const codes = extractReasonCodes(fullLine);
+
+        results.push({
+          source:'EOB', filename, payer, claimNum, dos, cpt,
+          billed, allowed, paid,
+          adjusted: billed - allowed,
+          adjCodes: codes,
+          spryReceived: null,
+          rawLine: fullLine.slice(0,120),
+        });
+      }
+    }
+
+    // Fallback: if no CPT lines found, create one summary entry
+    if(!found) {
+      const billedMatch = text.match(/(?:amount\s*billed|charged|billed)[:\s$]+(\d[\d,]*\.\d{2})/i);
+      const allowedMatch = text.match(/(?:allowed|eligible)[:\s$]+(\d[\d,]*\.\d{2})/i);
+      const paidMatch = text.match(/(?:amount\s*paid|payment|paid)[:\s$]+(\d[\d,]*\.\d{2})/i);
+      const billed = billedMatch ? parseMoney(billedMatch[1]) : 0;
+      const allowed = allowedMatch ? parseMoney(allowedMatch[1]) : 0;
+      const paid = paidMatch ? parseMoney(paidMatch[1]) : 0;
+      const codes = extractReasonCodes(text.slice(0,500));
+
+      results.push({
+        source:'EOB', filename, payer, claimNum, dos, cpt:'—',
+        billed, allowed, paid,
+        adjusted: billed - allowed,
+        adjCodes: codes,
+        spryReceived: null,
+        rawLine: 'Extracted from OCR — manual verification recommended',
+      });
+    }
+
+    return results;
+  }
+
+  function extractReasonCodes(text) {
+    const codes = [];
+    const re = /\b(CO|PR|OA|PI)-?\s*(\d{1,3})\b/gi;
+    let m;
+    while((m = re.exec(text)) !== null) {
+      codes.push((m[1]+'-'+m[2]).toUpperCase());
+    }
+    // Also look for CARCs without prefix: "Reason: 45" or "Code 97"
+    const careRe = /\b(?:reason|remark|code)[:\s#]+(\d{1,3})\b/gi;
+    while((m = careRe.exec(text)) !== null) {
+      if(!codes.find(c=>c.endsWith('-'+m[1]))) codes.push('CO-'+m[1]);
+    }
+    return [...new Set(codes)].slice(0,6);
+  }
+
+  function parseMoney(s) {
+    if(!s) return 0;
+    return parseFloat(String(s).replace(/[$,]/g,''))||0;
+  }
+
+  function clearEOBData() {
+    eobStore = [];
+    document.getElementById('eob-results').style.display = 'none';
+    document.getElementById('eob-progress').style.display = 'none';
+    document.getElementById('eob-log').innerHTML = '';
+    document.getElementById('eob-claims-body').innerHTML = '';
+    updateNavPills();
+  }
+
+  function renderEOBResults() {
+    if(!eobStore.length) return;
+    document.getElementById('eob-results').style.display = 'block';
+    const tbody = document.getElementById('eob-claims-body');
+    tbody.innerHTML = eobStore.map((claim,idx) => {
+      const adjTags = (claim.adjCodes||[]).map(adjTagHTML).join(' ');
+      const discr = getDiscrepancy(claim);
+      return `<tr>
+        <td style="font-size:11px;color:var(--muted);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${claim.filename}">${claim.filename.split('/').pop()}</td>
+        <td style="font-size:11px;">${claim.payer.slice(0,30)}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;">${claim.claimNum||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;white-space:nowrap;">${claim.dos||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--blue);">${claim.cpt}</td>
+        <td style="font-family:'DM Mono',monospace;">${claim.billed>0?fmt(claim.billed):'—'}</td>
+        <td style="font-family:'DM Mono',monospace;">${claim.allowed>0?fmt(claim.allowed):'—'}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--green);">${claim.paid>0?fmt(claim.paid):'—'}</td>
+        <td>${adjTags||'—'}</td>
+        <td><input class="spry-input" placeholder="$0.00" id="spry-${idx}" onchange="updateSpryReceived(${idx}, this.value)"></td>
+        <td id="discr-${idx}">${discr}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function updateSpryReceived(idx, val) {
+    eobStore[idx].spryReceived = parseMoney(val);
+    const cell = document.getElementById('discr-'+idx);
+    if(cell) cell.innerHTML = getDiscrepancy(eobStore[idx]);
+    updateNavPills();
+  }
+
+  function getDiscrepancy(claim) {
+    if(claim.spryReceived === null || claim.spryReceived === undefined) {
+      return '<span class="discrepancy-badge missing">⏳ Enter Spry amt</span>';
+    }
+    const diff = claim.paid - claim.spryReceived;
+    if(Math.abs(diff) < 0.50) return '<span class="discrepancy-badge match">✓ Match</span>';
+    if(diff > 0) return `<span class="discrepancy-badge mismatch">⚠ Spry low ${fmt(diff)}</span>`;
+    return `<span class="discrepancy-badge mismatch">⚠ Spry high ${fmt(Math.abs(diff))}</span>`;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // UNDERPAYMENT DETECTION ENGINE
+  // ══════════════════════════════════════════════════════════════
+  function detectUnderpaymentForClaim(claim) {
+    const schedules = loadFeeSchedules();
+    let totalUnderpay = 0;
+
+    const payerKey = findPayerKey(claim.payer, schedules);
+    if(!payerKey) return 0;
+    const rates = schedules[payerKey];
+
+    const sls = claim.serviceLines.length ? claim.serviceLines : [];
+    if(!sls.length && claim.billed > 0) {
+      // No service lines — check aggregate
+      return 0;
+    }
+
+    for(const sl of sls) {
+      const contracted = rates[sl.cpt];
+      if(!contracted) continue;
+      // Patient responsibility adjustments reduce what payer owes
+      const patAdj = sl.adjustments.filter(a=>a.pr).reduce((s,a)=>s+a.amount,0);
+      const expectedPay = (contracted * sl.units) - patAdj;
+      if(sl.paid < expectedPay - 0.50) {
+        totalUnderpay += expectedPay - sl.paid;
+      }
+    }
+    return totalUnderpay;
+  }
+
+  function findPayerKey(payerName, schedules) {
+    const n = (payerName||'').toLowerCase();
+    if(n.includes('medicare')) return 'Medicare';
+    if(n.includes('medicaid')) return 'Medicaid';
+    if(n.includes('aetna') || n.includes('preferred therapy')) return 'Aetna';
+    if(n.includes('blue shield') || n.includes('blue cross') || n.includes('bcbs')) return 'BCBS';
+    if(n.includes('united') || n.includes('optum') || n.includes('uhc')) return 'UnitedHealth';
+    if(n.includes('ash') || n.includes('american specialty')) return 'ASH';
+    for(const key of Object.keys(schedules)) {
+      if(n.includes(key.toLowerCase())) return key;
+    }
+    return null;
+  }
+
+  function runUnderpaymentScan() {
+    const schedules = loadFeeSchedules();
+    const allClaims = [
+      ...eraStore,
+      ...eobStore.map(e => ({
+        source: 'EOB', payer: e.payer,
+        serviceLines: e.cpt !== '—' ? [{cpt:e.cpt, billed:e.billed, paid:e.paid, units:1, adjustments: (e.adjCodes||[]).map(c=>({code:c,...getAdjInfo(c)}))}] : [],
+        billed: e.billed, paid: e.paid, claimId: e.claimNum||e.filename, dos: e.dos, patientName:'',
+      }))
+    ];
+
+    const flags = [];
+    let totalUnderpaid = 0;
+    let eraCount = 0; let eobCount = 0;
+
+    for(const claim of allClaims) {
+      const payerKey = findPayerKey(claim.payer, schedules);
+      if(!payerKey || !claim.serviceLines.length) continue;
+      const rates = schedules[payerKey];
+      const claimFlags = [];
+
+      for(const sl of claim.serviceLines) {
+        const contracted = rates[sl.cpt];
+        if(!contracted) continue;
+        const patAdj = (sl.adjustments||[]).filter(a=>a.pr).reduce((s,a)=>s+a.amount,0);
+        const expectedPay = (contracted * (sl.units||1)) - patAdj;
+        const diff = expectedPay - sl.paid;
+        if(diff > 0.50) {
+          claimFlags.push({cpt:sl.cpt, contracted, units:sl.units||1, paid:sl.paid, patAdj, expected:expectedPay, shortfall:diff});
+          totalUnderpaid += diff;
+        }
+      }
+
+      if(claimFlags.length) {
+        if(claim.source==='ERA') eraCount++; else eobCount++;
+        flags.push({claim, claimFlags, payerKey});
+      }
+    }
+
+    // Update stats
+    document.getElementById('up-count').textContent = flags.length;
+    document.getElementById('up-total').textContent = fmt(totalUnderpaid);
+    document.getElementById('up-era').textContent = eraCount;
+    document.getElementById('up-eob').textContent = eobCount;
+    document.getElementById('underpay-total-label').textContent = flags.length ? `${fmt(totalUnderpaid)} underpaid across ${flags.length} claims` : '';
+
+    const listEl = document.getElementById('underpay-list');
+    if(!flags.length) {
+      listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">No underpayments detected with current fee schedule configuration. <br>Check that payer names in your ERA/EOB match the fee schedule payer names above.</div>';
+      updateNavPills();
+      return;
+    }
+
+    listEl.innerHTML = flags.map(({claim, claimFlags, payerKey}) => {
+      const total = claimFlags.reduce((s,f)=>s+f.shortfall,0);
+      return `<div class="underpay-flag">
+        <div class="underpay-flag-header">
+          <div>
+            <div class="underpay-flag-title">⚠ ${claim.payer} — Claim ${claim.claimId}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${claim.source} · DOS: ${claim.dos||'—'} · ${claim.patientName||''} · Fee schedule: ${payerKey}</div>
+          </div>
+          <div class="underpay-amount">${fmt(total)}</div>
+        </div>
+        <div class="underpay-detail">
+          ${claimFlags.map(f => `CPT ${f.cpt} (${cptName(f.cpt)}) — Contracted: ${fmt(f.contracted)}×${f.units} = ${fmt(f.contracted*f.units)} · Patient resp: ${fmt(f.patAdj)} · Expected pay: ${fmt(f.expected)} · Actual paid: ${fmt(f.paid)} → SHORT ${fmt(f.shortfall)}`).join('<br>')}
+        </div>
+      </div>`;
+    }).join('');
+
+    updateNavPills();
+  }
+
+  function exportUnderpayments() {
+    const schedules = loadFeeSchedules();
+    const allClaims = [...eraStore, ...eobStore.map(e=>({source:'EOB',payer:e.payer,serviceLines:e.cpt!=='—'?[{cpt:e.cpt,paid:e.paid,units:1,adjustments:(e.adjCodes||[]).map(c=>({code:c,...getAdjInfo(c)}))}]:[],claimId:e.claimNum||e.filename,dos:e.dos,patientName:''}))];
+    const rows = ['Source,Payer,Claim ID,DOS,Patient,CPT,Contracted Rate,Expected Pay,Actual Paid,Shortfall'];
+    for(const claim of allClaims) {
+      const payerKey = findPayerKey(claim.payer, schedules);
+      if(!payerKey || !claim.serviceLines.length) continue;
+      const rates = schedules[payerKey];
+      for(const sl of claim.serviceLines) {
+        const contracted = rates[sl.cpt];
+        if(!contracted) continue;
+        const patAdj = (sl.adjustments||[]).filter(a=>a.pr).reduce((s,a)=>s+a.amount,0);
+        const expected = (contracted*(sl.units||1))-patAdj;
+        const diff = expected-sl.paid;
+        if(diff>0.50) rows.push([claim.source,claim.payer,claim.claimId,claim.dos||'—',claim.patientName||'—',sl.cpt,contracted.toFixed(2),expected.toFixed(2),sl.paid.toFixed(2),diff.toFixed(2)].join(','));
+      }
+    }
+    const blob = new Blob([rows.join('\n')],{type:'text/csv'});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='Underpayments_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  }
+
+  function updateNavPills() {
+    const eraEl = document.getElementById('era-pill');
+    if(eraEl) { eraEl.textContent=eraStore.length; eraEl.style.display=eraStore.length?'inline':'none'; }
+    const eobEl = document.getElementById('eob-pill');
+    if(eobEl) { eobEl.textContent=eobStore.length; eobEl.style.display=eobStore.length?'inline':'none'; }
+    // Count underpayments
+    const schedules = loadFeeSchedules();
+    let upCount=0;
+    for(const c of eraStore) { if(detectUnderpaymentForClaim(c)>0) upCount++; }
+    const upEl = document.getElementById('underpay-pill');
+    if(upEl) { upEl.textContent=upCount; upEl.style.display=upCount?'inline':'none'; }
+  }
+
+  // ── GitHub Download ──────────────────────────────────────────
+  function downloadThisFile() {
+    const html = document.documentElement.outerHTML;
+    const blob = new Blob(['<!DOCTYPE html>\n'+html],{type:'text/html'});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='MobilityRx_Billing_Auditor.html'; a.click();
+  }
+
 </script>
 </body>
 </html>
