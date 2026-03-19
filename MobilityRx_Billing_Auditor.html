@@ -839,7 +839,6 @@
   .github-step-body code{background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;color:var(--blue);}
 
 </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://apis.google.com/js/api.js" async defer onerror="console.warn('Google API script failed to load')"></script>
   <script src="https://accounts.google.com/gsi/client" async defer onerror="console.warn('Google Identity Services failed to load')"></script>
 </head>
@@ -1215,6 +1214,7 @@
         <div class="section-title">📋 EDI X12 835 — Electronic Remittance Advice Parser</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <button class="download-btn" onclick="loadSampleERA()">📄 Load Sample ERA</button>
+          <button class="download-btn" onclick="exportERAcsv()">⬇ Export CSV</button>
           <button class="download-btn" onclick="clearERAData()">✕ Clear</button>
         </div>
       </div>
@@ -1236,8 +1236,21 @@
       <div class="era-stat-row" id="era-stats"></div>
       <div class="panel">
         <div class="section-header">
-          <div class="section-title">Parsed Claims</div>
-          <input style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;width:200px;outline:none;" placeholder="Search claim ID, payer..." id="era-search" oninput="filterERAClaims(this.value)">
+          <div class="section-title">Parsed Claims <span id="era-count-label" style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;font-weight:400;"></span></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="era-filter-status" onchange="filterERAClaims()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;outline:none;">
+              <option value="">All Claims</option>
+              <option value="underpaid">⚠ Underpaid Only</option>
+              <option value="ok">✓ OK Only</option>
+              <option value="denied">Denied (Status 4)</option>
+            </select>
+            <select id="era-filter-payer" onchange="filterERAClaims()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;outline:none;">
+              <option value="">All Payers</option>
+            </select>
+            <input style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;width:180px;outline:none;" placeholder="Search claim, patient..." id="era-search" oninput="filterERAClaims()">
+            <button class="download-btn" onclick="exportERAcsv()" style="white-space:nowrap;">⬇ Export CSV</button>
+            <button class="download-btn" onclick="exportERAUnderpaidOnly()" style="white-space:nowrap;border-color:var(--red);color:var(--red);">⬇ Underpaid Only</button>
+          </div>
         </div>
         <div id="era-claims-list"></div>
       </div>
@@ -1522,17 +1535,24 @@
   function buildPicker() {
     if (!pickerApiLoaded || !driveAccessToken) return;
 
-    // Build a view that shows only CSV and Excel files
-    const docsView = new google.picker.DocsView()
+    // All files view — Spry CSVs, Excel reports, and ERA/835 files
+    const allFilesView = new google.picker.DocsView()
       .setIncludeFolders(true)
       .setSelectFolderEnabled(true)
-      .setMimeTypes('text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      .setMimeTypes([
+        'text/csv',
+        'text/plain',                   // .x12 .835 .edi files are plain text
+        'application/octet-stream',     // some ERA files have this type
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/pdf',
+      ].join(','));
 
     const picker = new google.picker.PickerBuilder()
-      .setTitle('Select your Spry PT report files or folder')
+      .setTitle('Select Spry reports, ERA .x12/.835 files, or EOB PDFs')
       .setOAuthToken(driveAccessToken)
       .setDeveloperKey(driveApiKey)
-      .addView(docsView)
+      .addView(allFilesView)
       .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
       .setCallback(pickerCallback)
       .build();
@@ -1577,11 +1597,11 @@
   }
 
   async function loadDriveFolder(folderId) {
-    // List CSV/Excel files in folder
+    // List all supported file types in folder — CSVs, Excel, ERA files, PDFs
     const response = await gapi.client.drive.files.list({
-      q: `'${folderId}' in parents and (mimeType='text/csv' or mimeType contains 'spreadsheet') and trashed=false`,
+      q: `'${folderId}' in parents and (mimeType='text/csv' or mimeType='text/plain' or mimeType='application/octet-stream' or mimeType contains 'spreadsheet' or mimeType='application/pdf') and trashed=false`,
       fields: 'files(id,name,mimeType)',
-      pageSize: 50
+      pageSize: 100
     });
     const files = response.result.files || [];
     setDriveStatus(`Found ${files.length} files in folder — loading...`, '');
@@ -1711,17 +1731,9 @@
     if (n.includes('appointment_tracking') || n.includes('appointment tracking')) return 'appointment_tracking';
     if (n.includes('copay')) return 'copay';
     if (n.includes('productivity')) return 'productivity';
-    if (n.includes('provider_performance') || n.includes('provider performance') || n.includes('provider performance')) return 'provider_performance';
-    // Insurance payment collection (two versions)
-    if (n.includes('payment_collection') || n.includes('payment collection')) {
-      // The insurance version has more columns — detect by checking later in name
-      return 'payment_collection';
-    }
-    if (n.includes('bulk_appointment') || n.includes('bulk appointment') || n.includes('bulk_appointments')) return 'bulk_appointments';
-    if (n.includes('individual_appointment') || n.includes('individual appointment') || n.includes('individual appointments')) return 'individual_appointments';
-    // Aging reports — order matters, check most specific first
-    if (n.includes('primary_only') || n.includes('primary only paid ageing') || n.includes('primary_only_paid')) return 'aging_primary_only';
-    if (n.includes('primary_and_secondary') || n.includes('primary and secondary paid') || n.includes('primary_and_secondary_paid')) return 'aging_primary_secondary';
+    if (n.includes('provider_performance') || n.includes('provider performance')) return 'provider_performance';
+    if (n.includes('primary_only') || n.includes('primary only')) return 'aging_primary_only';
+    if (n.includes('primary_and_secondary') || n.includes('primary and secondary')) return 'aging_primary_secondary';
     if (n.includes('primary_paid_secondary_submitted') || n.includes('paid_secondary_submitted')) return 'aging_primary_paid_secondary_submitted';
     if (n.includes('primary_submitted_secondary_draft') || n.includes('submitted_secondary_draft')) return 'aging_primary_submitted_secondary_draft';
     if (n.includes('payment_collection') || n.includes('payment collection')) return 'payment_collection';
@@ -1786,32 +1798,6 @@
     });
   }
 
-  // Read XLSX file using SheetJS and return array of row objects
-  async function readXLSX(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, {type: 'array', cellDates: true});
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          const rows = XLSX.utils.sheet_to_json(sheet, {
-            defval: '',
-            raw: false,
-            dateNF: 'mm/dd/yy'
-          });
-          resolve(rows);
-        } catch(err) {
-          console.error('XLSX parse error:', err);
-          resolve([]);
-        }
-      };
-      reader.onerror = () => resolve([]);
-      reader.readAsArrayBuffer(file);
-    });
-  }
-
   // ── AUDIT ENGINE ────────────────────────────────────────────────
   async function runAudit() {
     document.getElementById('upload-screen').style.display = 'none';
@@ -1822,18 +1808,8 @@
     const data = {};
     for (const [key, file] of Object.entries(uploadedFiles)) {
       if (file.name.endsWith('.pdf')) continue;
-      try {
-        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-          data[key] = await readXLSX(file);
-        } else {
-          const text = await readFile(file);
-          data[key] = parseCSV(text);
-        }
-        console.log(`Loaded ${key}: ${(data[key]||[]).length} rows`);
-      } catch(err) {
-        console.error(`Error loading ${key}:`, err);
-        data[key] = [];
-      }
+      const text = await readFile(file);
+      data[key] = parseCSV(text);
     }
 
     const results = analyze(data);
@@ -1849,41 +1825,6 @@
     const r = {};
     const comp = data['comprehensive'] || [];
 
-    // ── BUILD CHARGE-LEVEL SUMMARY (deduplicated — one entry per charge ID)
-    // Comp has one row per CPT code per charge. Allowed/Paid/Status are charge-level
-    // duplicated across CPT rows. We dedupe to avoid double-counting.
-    const chargeSummary = {};
-    comp.forEach(row => {
-      const cid = String(row['Charge ID'] || '');
-      if (!cid || cid === 'None') return;
-      if (!chargeSummary[cid]) {
-        chargeSummary[cid] = {
-          chargeId: cid,
-          payer: row['Payer Name'] || '—',
-          provider: row['EMR Rendering Provider'] || '—',
-          status: row['Status'] || '',
-          serviceDate: row['Service Date'] || '',
-          billed: money(row['Total Billed Amount']),
-          allowed: money(row['Total Allowed Amount']),
-          totalPaid: money(String(row['Total Paid Amount'] || 0)),
-          insPaid: money(String(row['Insurance Paid Amount'] || 0)),
-          primaryPaid: money(row['Primary Paid']),
-          secondaryPaid: money(row['Secondary Paid']),
-          patResp: money(row['Total Patient Responsibility']),
-          pending: money(String(row['Total Pending Balance'] || 0)),
-          selfPay: String(row['Self Pay'] || '').toUpperCase() === 'TRUE',
-          cpts: [],
-          authVisits: parseFloat(row['Authorized Visits']) || 0,
-          consumedVisits: parseFloat(row['Total Consumed visits']) || 0,
-        };
-      }
-      const cpt = String(row['Procedure Code'] || '');
-      if (cpt && !chargeSummary[cid].cpts.includes(cpt)) {
-        chargeSummary[cid].cpts.push(cpt);
-      }
-    });
-    const chargeList = Object.values(chargeSummary);
-
     // ── STATUS BREAKDOWN
     const statusMap = {};
     comp.forEach(row => {
@@ -1891,95 +1832,37 @@
       statusMap[s] = (statusMap[s]||0) + 1;
     });
 
-    // ── STATUS FILTERS — now using deduplicated charge-level summary
-    // CL_REJECTED suppression: if a charge also has BILL_PENDING/BILL_READY it was resubmitted
-    const ACTIVE_STATUSES = new Set(['BILL_PENDING','BILL_READY','CLOSED','PENDING_REVIEW','CL_ACCEPTED']);
+    // Build a map of charge IDs that have ALSO been seen with a newer active status
+    // This catches the CL_REJECTED -> BILL_PENDING transition (false positive pattern)
     const chargeStatusMap = {};
     comp.forEach(r => {
-      const cid = String(r['Charge ID'] || '');
-      if (!chargeStatusMap[cid]) chargeStatusMap[cid] = new Set();
-      chargeStatusMap[cid].add(r['Status']);
+      const cid = r['Charge ID'];
+      if (!chargeStatusMap[cid]) chargeStatusMap[cid] = [];
+      chargeStatusMap[cid].push(r['Status']);
     });
+    const ACTIVE_STATUSES = ['BILL_PENDING','BILL_READY','CLOSED','PENDING_REVIEW'];
 
-    const denied = chargeList.filter(c => {
-      if (!['PR_DENIED','CL_REJECTED'].includes(c.status)) return false;
-      // Suppress CL_REJECTED if charge was already resubmitted (has active status)
-      const allStatuses = chargeStatusMap[c.chargeId] || new Set();
-      if (c.status === 'CL_REJECTED' && [...allStatuses].some(s => ACTIVE_STATUSES.has(s) && s !== 'CL_REJECTED')) return false;
+    const denied = comp.filter(r => {
+      if (!['PR_DENIED','CL_REJECTED'].includes(r['Status'])) return false;
+      // Suppress if this charge ID ALSO appears with an active/progressed status
+      // (means it was corrected/resubmitted — don't re-flag)
+      const allStatuses = chargeStatusMap[r['Charge ID']] || [];
+      const hasActiveStatus = allStatuses.some(s => ACTIVE_STATUSES.includes(s));
+      if (hasActiveStatus && r['Status'] === 'CL_REJECTED') return false;
       return true;
     });
-    const drafts        = chargeList.filter(c => c.status === 'DRAFT');
-    const pendingReview = chargeList.filter(c => c.status === 'PENDING_REVIEW');
-    const billStuck     = chargeList.filter(c => ['BILL_PENDING','BILL_READY'].includes(c.status));
-    const needsInfo     = chargeList.filter(c => c.status === 'NEEDS_INFORMATION');
-    const clAccepted    = chargeList.filter(c => c.status === 'CL_ACCEPTED');
-    const paperSub      = chargeList.filter(c => c.status === 'PAPER_SUBMITTED');
+    const drafts = comp.filter(r => r['Status'] === 'DRAFT');
+    const pendingReview = comp.filter(r => r['Status'] === 'PENDING_REVIEW');
+    const billStuck = comp.filter(r => ['BILL_PENDING','BILL_READY'].includes(r['Status']));
+    const needsInfo = comp.filter(r => r['Status'] === 'NEEDS_INFORMATION');
 
-    const deniedTotal   = denied.reduce((s,c) => s+c.billed, 0);
-    const draftTotal    = drafts.reduce((s,c) => s+c.billed, 0);
-    const pendingTotal  = pendingReview.reduce((s,c) => s+c.billed, 0);
-    const stuckTotal    = billStuck.reduce((s,c) => s+c.billed, 0);
-    const totalPending  = chargeList.reduce((s,c) => s+c.pending, 0);
-    const totalBilled   = chargeList.reduce((s,c) => s+c.billed, 0);
-    const totalPaid     = chargeList.reduce((s,c) => s+c.totalPaid, 0);
-
-    // ── RECONCILIATION: Allowed = PrimaryPaid + SecondaryPaid + PatientResp
-    // Flag CLOSED claims where this doesn't balance (underpayment or missing secondary)
-    const reconErrors = [];
-    chargeList.forEach(c => {
-      if (c.status !== 'CLOSED') return;
-      if (c.selfPay || c.allowed <= 0) return;
-      const expectedPaid = c.primaryPaid + c.secondaryPaid + c.patResp;
-      const gap = c.allowed - expectedPaid;
-      if (gap > 2.0) {
-        // Determine likely cause
-        let cause = '';
-        if (c.secondaryPaid === 0 && c.primaryPaid > 0) cause = 'Secondary insurance payment missing or not posted';
-        else if (c.primaryPaid === 0 && c.allowed > 0) cause = 'Payment not posted — check ERA/EOB';
-        else cause = 'Partial payment — verify EOB for balance';
-        reconErrors.push({...c, gap: Math.round(gap*100)/100, cause});
-      }
-    });
-
-    // ── SECONDARY INSURANCE PENDING (primary paid, secondary not yet received)
-    const secPending = data['aging_primary_paid_secondary_submitted'] || [];
-    const secPendingTotal = secPending.reduce((s,r) => {
-      const v = r['Secondary Submitted/patient balance'] || r['Pending Balance'] || 0;
-      return s + money(String(v));
-    }, 0);
-
-    // ── PROVIDER PERFORMANCE from provider_performance report
-    const perfData = data['provider_performance'] || [];
-    const providerPerf = {};
-    perfData.forEach(r => {
-      const name = r['Provider Name'] || '';
-      if (!name || name === 'Miscellaneous Payments') return;
-      providerPerf[name] = {
-        patientPayment: money(r['Patient Payment Collected']),
-        insPayment: money(r['Insurance Payment Collected']),
-        totalPayment: money(r['Total Payment Collected']),
-      };
-    });
-
-    // ── PAYMENT COLLECTION — cross-reference ERA payments
-    const payCollection = data['payment_collection'] || [];
-    const payByCharge = {};
-    payCollection.forEach(r => {
-      const cid = String(r['Charge ID'] || '');
-      if (!cid || cid === '0') return;
-      if (!payByCharge[cid]) payByCharge[cid] = [];
-      payByCharge[cid].push({
-        insName: r['Insurance Name'] || '',
-        priSec: r['Primary / Secondary / Tertiary '] || '',
-        amount: money(r['Payment Collected']),
-        paidDate: r['Paid date'] || '',
-        eraDate: r['ERA Received Date'] || '',
-        checkNo: r['Check/EFT No.'] || '',
-      });
-    });
-
-    // Paper submissions — flag for follow-up
-    const paperSubTotal = paperSub.reduce((s,c) => s+c.billed, 0);
+    const deniedTotal = denied.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const draftTotal = drafts.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const pendingTotal = pendingReview.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const stuckTotal = billStuck.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const totalPending = comp.reduce((s,r) => s+money(r['Total Pending Balance']),0);
+    const totalBilled = comp.reduce((s,r) => s+money(r['Total Billed Amount']),0);
+    const totalPaid = comp.reduce((s,r) => s+money(r['Total Paid Amount']),0);
 
     // ── $0 ALLOWED AMOUNT
     const zeroAllowed = comp.filter(r =>
@@ -2079,43 +1962,26 @@
       obsoleteCPT: [],         // obsolete CPT codes (e.g. 29540, 29590)
     };
 
-    // Build worklist from deduplicated charge-level summary
-    chargeList.forEach(c => {
+    comp.forEach(row => {
       const base = {
-        chargeId: c.chargeId,
-        serviceDate: c.serviceDate,
-        payer: c.payer,
-        provider: c.provider,
-        billed: c.billed,
-        status: c.status,
-        cpt: c.cpts.join(', ') || '—'
+        chargeId: row['Charge ID'],
+        serviceDate: row['Service Date'],
+        payer: row['Payer Name'] || '—',
+        provider: row['EMR Rendering Provider'] || '—',
+        billed: money(row['Total Billed Amount']),
+        status: row['Status'],
+        cpt: row['Procedure Code'] || '—'
       };
-      if (c.status === 'DRAFT') {
+      if (row['Status'] === 'DRAFT') {
         worklist.draft.push({...base, issue: 'Never submitted to insurance', action: 'Submit claim immediately'});
-      } else if (['PR_DENIED','CL_REJECTED'].includes(c.status)) {
-        // Only add if not suppressed by resubmission check
-        if (denied.find(d => d.chargeId === c.chargeId)) {
-          worklist.denied.push({...base, issue: c.status === 'PR_DENIED' ? 'Primary denied' : 'Claim rejected', action: 'Review denial reason, correct and resubmit'});
-        }
-      } else if (['BILL_PENDING','BILL_READY'].includes(c.status)) {
-        worklist.stuck.push({...base, issue: `Stuck in ${c.status} — not submitted`, action: 'Force submit or investigate queue hold'});
-      } else if (c.status === 'PENDING_REVIEW') {
+      } else if (['PR_DENIED','CL_REJECTED'].includes(row['Status'])) {
+        worklist.denied.push({...base, issue: row['Status'] === 'PR_DENIED' ? 'Primary denied' : 'Claim rejected', action: 'Review denial reason, correct and resubmit'});
+      } else if (['BILL_PENDING','BILL_READY'].includes(row['Status'])) {
+        worklist.stuck.push({...base, issue: 'Stuck in billing queue — not submitted', action: 'Force submit or investigate queue hold'});
+      } else if (row['Status'] === 'PENDING_REVIEW') {
         worklist.pending.push({...base, issue: 'Flagged for review — blocking submission', action: 'Review and resolve flag, then submit'});
-      } else if (c.status === 'NEEDS_INFORMATION') {
+      } else if (row['Status'] === 'NEEDS_INFORMATION') {
         worklist.needsInfo.push({...base, issue: 'Missing required claim information', action: 'Gather missing info and resubmit'});
-      } else if (c.status === 'PAPER_SUBMITTED') {
-        worklist.stuck.push({...base, issue: 'Paper submission — slow processing, no electronic tracking', action: 'Switch to electronic submission; follow up if >30 days since submission'});
-      }
-      // Reconciliation errors on closed claims
-      const recon = reconErrors.find(r => r.chargeId === c.chargeId);
-      if (recon) {
-        worklist.reconciliation = worklist.reconciliation || [];
-        worklist.reconciliation.push({
-          ...base,
-          billed: recon.allowed,
-          issue: `Payment gap $${recon.gap.toFixed(2)} — ${recon.cause}`,
-          action: `Cross-reference ERA/EOB. Allowed: $${recon.allowed} | Paid: $${(recon.primaryPaid+recon.secondaryPaid).toFixed(2)} | PatResp: $${recon.patResp}`
-        });
       }
     });
 
@@ -2234,18 +2100,14 @@
       statusMap, denied, drafts, pendingReview, billStuck, needsInfo,
       deniedTotal, draftTotal, pendingTotal, stuckTotal, totalPending,
       totalBilled, totalPaid, zeroAllowed, zeroAllowedTotal,
-      payerRates, providerStats, providerPerf, avgRevenuePerUnit,
+      payerRates, providerStats, avgRevenuePerUnit,
       totalMissingUnits, estLostRevenue,
       copayBalance, copayRate, copayOwed, copayPaid,
       over90, over60, over30, under30,
       writeoffs, insAdj, authOverrun,
-      adjTypes, worklist, reconErrors, chargeList,
+      adjTypes, worklist,
       evalFrequencyCount: worklist.evalFrequency.length,
       obsoleteCPTCount: worklist.obsoleteCPT.length,
-      reconErrorCount: reconErrors.length,
-      reconErrorTotal: Math.round(reconErrors.reduce((s,e)=>s+e.gap,0)*100)/100,
-      secPendingTotal, paperSubCount: paperSub.length,
-      clAcceptedCount: clAccepted.length,
     };
   }
 
@@ -2266,8 +2128,6 @@
       { label: 'Total Pending Balance', value: fmtK(r.totalPending), sub: 'Across all open claims', color: 'red' },
       { label: 'Denied / Rejected', value: r.denied.length, sub: fmt(r.deniedTotal) + ' at risk', color: 'red' },
       { label: 'Draft (Never Submitted)', value: r.drafts.length, sub: fmt(r.draftTotal) + ' unsubmitted', color: 'red' },
-      { label: 'Payment Gaps', value: r.reconErrorCount || 0, sub: fmt(r.reconErrorTotal||0) + ' unreconciled', color: r.reconErrorCount > 0 ? 'red' : 'green' },
-      { label: 'Accepted / In Transit', value: r.clAcceptedCount || 0, sub: 'CL_ACCEPTED — awaiting adjudication', color: 'blue' },
       { label: 'Est. Underbilling Loss', value: fmtK(r.estLostRevenue), sub: Math.round(r.totalMissingUnits) + ' missing units', color: 'amber' },
       { label: 'Stuck in Billing Queue', value: r.billStuck.length, sub: fmt(r.stuckTotal) + ' pending', color: 'amber' },
       { label: 'Copay Collection Rate', value: r.copayRate.toFixed(1) + '%', sub: fmt(r.copayBalance) + ' outstanding', color: r.copayRate > 95 ? 'green' : 'amber' },
@@ -2336,24 +2196,6 @@
         detail: `${r.zeroAllowed.length} non-self-pay claims show $0 allowed. Verify payer contracts are loaded correctly in Spry.`,
         money: fmt(r.zeroAllowedTotal) + ' billed',
         priority: '🟡 Investigate'
-      },
-      r.reconErrorCount > 0 && {
-        issue: '🔴 Payment Gaps — Closed Claims Not Fully Reconciled',
-        detail: `${r.reconErrorCount} closed claims where Allowed Amount ≠ Primary + Secondary + Patient Responsibility. May indicate missing secondary payments or ERA not posted in Spry.`,
-        money: fmt(r.reconErrorTotal),
-        priority: '🔴 Investigate'
-      },
-      r.paperSubCount > 0 && {
-        issue: '⚠️ Paper Submissions — Switch to Electronic',
-        detail: `${r.paperSubCount} claims submitted on paper. Paper claims process slower and are harder to track. Per most contracts, electronic submission is preferred.`,
-        money: '—',
-        priority: '🟡 This Week'
-      },
-      r.secPendingTotal > 0 && {
-        issue: '⚠️ Secondary Insurance Pending Payment',
-        detail: `Secondary claims submitted but payment not yet received. Monitor and follow up if >30 days since primary paid.`,
-        money: fmt(r.secPendingTotal),
-        priority: '🟡 Monitor'
       },
     ].filter(Boolean);
 
@@ -2474,15 +2316,14 @@
     globalWorklist = worklist;
 
     const tabs = [
-      { key: 'draft',               label: '🔴 Never Submitted',       cls: '' },
-      { key: 'denied',              label: '🔴 Denied/Rejected',        cls: '' },
-      { key: 'stuck',               label: '🔴 Stuck in Queue',         cls: '' },
-      { key: 'needsInfo',           label: '🔴 Needs Info',             cls: '' },
-      { key: 'evalFrequency',       label: '🔴 Eval Freq Violation',    cls: '' },
-      { key: 'obsoleteCPT',         label: '🔴 Obsolete CPT',           cls: '' },
-      { key: 'reconciliation',      label: '🔴 Payment Gaps',           cls: '' },
-      { key: 'pending',             label: '🟡 Pending Review',         cls: 'amber-tab' },
-      { key: 'underbilling',        label: '🟡 Underbilling (Ins.)',    cls: 'amber-tab' },
+      { key: 'draft',               label: '🔴 Never Submitted',      cls: '' },
+      { key: 'denied',              label: '🔴 Denied/Rejected',       cls: '' },
+      { key: 'stuck',               label: '🔴 Stuck in Queue',        cls: '' },
+      { key: 'needsInfo',           label: '🔴 Needs Info',            cls: '' },
+      { key: 'evalFrequency',       label: '🔴 Eval Freq Violation',   cls: '' },
+      { key: 'obsoleteCPT',         label: '🔴 Obsolete CPT',          cls: '' },
+      { key: 'pending',             label: '🟡 Pending Review',        cls: 'amber-tab' },
+      { key: 'underbilling',        label: '🟡 Underbilling (Ins.)',   cls: 'amber-tab' },
       { key: 'underbillingSelfPay', label: '⚪ Underbilling (Self Pay)', cls: 'blue-tab' },
     ].filter(t => worklist[t.key]?.length > 0);
 
@@ -3422,13 +3263,27 @@
     `;
 
     const listEl = document.getElementById('era-claims-list');
+
+    // Populate payer filter dropdown
+    const payerSelect = document.getElementById('era-filter-payer');
+    if (payerSelect) {
+      const payers = [...new Set(eraStore.map(c => c.payer))].sort();
+      payerSelect.innerHTML = '<option value="">All Payers</option>' +
+        payers.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+
+    // Update count label
+    const countLbl = document.getElementById('era-count-label');
+    if (countLbl) countLbl.textContent = `(${eraStore.length} claims)`;
+
     listEl.innerHTML = eraStore.map((claim,idx) => {
       const underpay = detectUnderpaymentForClaim(claim);
+      const isDenied = claim.statusCode === '4';
       const flag = underpay ? `<span class="flag red">⚠ Underpaid ${fmt(underpay)}</span>` : `<span class="flag green">✓ OK</span>`;
       const allAdj = [...claim.adjustments, ...claim.serviceLines.flatMap(s=>s.adjustments)];
       const adjTags = [...new Set(allAdj.map(a=>a.code))].map(adjTagHTML).join('');
       return `
-        <div class="claim-card">
+        <div class="claim-card" data-underpaid="${underpay > 0}" data-denied="${isDenied}" data-payer="${claim.payer}">
           <div class="claim-card-header" onclick="toggleClaimBody('era-cb-${idx}')">
             <span class="claim-id">${claim.claimId}</span>
             <span style="font-size:12px;color:var(--muted);">${claim.payer}</span>
@@ -3500,12 +3355,80 @@
     if(el) el.classList.toggle('open');
   }
 
-  function filterERAClaims(query) {
-    const q = query.toLowerCase();
+  function filterERAClaims() {
+    const q = (document.getElementById('era-search')?.value || '').toLowerCase();
+    const statusFilter = document.getElementById('era-filter-status')?.value || '';
+    const payerFilter = document.getElementById('era-filter-payer')?.value || '';
+
+    let visible = 0;
     document.querySelectorAll('#era-claims-list .claim-card').forEach(card => {
-      card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+      const text = card.textContent.toLowerCase();
+      const isUnderpaid = card.dataset.underpaid === 'true';
+      const isDenied = card.dataset.denied === 'true';
+      const payer = card.dataset.payer || '';
+
+      let show = true;
+      if (q && !text.includes(q)) show = false;
+      if (payerFilter && payer !== payerFilter) show = false;
+      if (statusFilter === 'underpaid' && !isUnderpaid) show = false;
+      if (statusFilter === 'ok' && isUnderpaid) show = false;
+      if (statusFilter === 'denied' && !isDenied) show = false;
+
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
     });
+    const lbl = document.getElementById('era-count-label');
+    if (lbl) lbl.textContent = `(${visible} shown)`;
   }
+
+  function exportERAcsv(underpaidOnly = false) {
+    if (!eraStore.length) { alert('No ERA data loaded yet.'); return; }
+
+    const schedules = loadFeeSchedules();
+    const headers = ['Claim ID','Payer','Patient','DOS','Check #','Check Date','Status',
+      'Billed','Allowed','Paid','Adjusted','Underpaid $','CPT Codes','Adj Codes','Source File'];
+    const rows = [headers.map(h => '"'+h+'"').join(',')];
+
+    for (const claim of eraStore) {
+      const underpay = detectUnderpaymentForClaim(claim);
+      if (underpaidOnly && underpay <= 0) continue;
+
+      const allAdj = [...claim.adjustments, ...claim.serviceLines.flatMap(s=>s.adjustments)];
+      const adjCodes = [...new Set(allAdj.map(a=>a.code))].join(' | ');
+      const cpts = [...new Set(claim.serviceLines.map(s=>s.cpt))].join(' | ');
+      const allowed = claim.allowed || claim.paid;
+
+      rows.push([
+        claim.claimId,
+        claim.payer,
+        claim.patientName || '—',
+        claim.dos || '—',
+        claim.checkNum || '—',
+        claim.checkDate || '—',
+        claim.status,
+        claim.billed.toFixed(2),
+        allowed.toFixed(2),
+        claim.paid.toFixed(2),
+        (claim.billed - allowed).toFixed(2),
+        underpay > 0 ? underpay.toFixed(2) : '',
+        cpts,
+        adjCodes,
+        claim.filename || '—',
+      ].map(v => '"' + String(v).replace(/"/g,'""') + '"').join(','));
+    }
+
+    const csv = '\uFEFF' + rows.join('\n');
+    const label = underpaidOnly ? 'ERA_Underpaid_Only' : 'ERA_All_Claims';
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = label + '_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportERAUnderpaidOnly() { exportERAcsv(true); }
 
   function loadSampleERA() {
     // Generate a realistic sample 835
