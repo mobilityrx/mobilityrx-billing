@@ -1007,12 +1007,13 @@
   <div class="divider-text">— or drag files manually —</div>
 
   <div class="drop-zone" id="drop-zone">
-    <input type="file" id="file-input" multiple accept=".csv,.xlsx,.xls,.pdf">
+    <input type="file" id="file-input" multiple accept=".csv,.xlsx,.xls,.pdf,.x12,.835,.edi">
     <div class="drop-icon">📂</div>
     <h3>Drop Your Spry PT Reports Here</h3>
-    <p>Upload your exported CSV/Excel files from Spry PT.<br>
-    All data is processed locally — nothing leaves your computer.</p>
+    <p>Upload CSV/Excel files from Spry PT, or .x12/.835 ERA files.<br>
+    ERA files are automatically sent to the ERA/835 tab. All data processed locally.</p>
   </div>
+  <div id="era-auto-notice" style="display:none;background:#0a2a1a;border:1px solid #1a4a2a;border-radius:8px;padding:10px 16px;font-size:12px;color:var(--green);width:100%;max-width:640px;text-align:center;"></div>
 
   <div class="file-list" id="file-list"></div>
 
@@ -1716,9 +1717,25 @@
   fileInput.addEventListener('change', e => handleFiles(e.target.files));
 
   function handleFiles(files) {
+    const eraFiles = [];
     for (const file of files) {
+      const n = file.name.toLowerCase();
+      // Route ERA files to ERA parser automatically
+      if (n.endsWith('.x12') || n.endsWith('.835') || n.endsWith('.edi')) {
+        eraFiles.push(file);
+        continue;
+      }
       const key = detectFileType(file.name);
       uploadedFiles[key || file.name] = file;
+    }
+    if (eraFiles.length > 0) {
+      // Show ERA tab and process them
+      const eraNotice = document.getElementById('era-auto-notice');
+      if (eraNotice) {
+        eraNotice.textContent = `✓ ${eraFiles.length} ERA file(s) sent to ERA/835 tab automatically`;
+        eraNotice.style.display = 'block';
+      }
+      handleERAFiles(eraFiles);
     }
     renderFileList();
     runBtn.disabled = Object.keys(uploadedFiles).length === 0;
@@ -1800,22 +1817,152 @@
   }
 
   // ── AUDIT ENGINE ────────────────────────────────────────────────
+  // ── XLSX PARSER — no external CDN dependency
+  // Uses the browser's built-in DecompressionStream API (supported in all modern browsers)
+  async function readXLSXasRows(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async e => {
+        try {
+          const bytes = new Uint8Array(e.target.result);
+          const entries = await extractZipEntries(bytes);
+          const ssXML  = entries['xl/sharedStrings.xml'] || '';
+          const shKey  = Object.keys(entries).find(k => /xl[\/]worksheets[\/]sheet1?\.xml$/.test(k));
+          if (!shKey) { resolve([]); return; }
+          const strings = parseSharedStrings(ssXML);
+          resolve(parseSheetXML(entries[shKey], strings));
+        } catch(err) {
+          console.error('XLSX parse error:', file.name, err);
+          resolve([]);
+        }
+      };
+      reader.onerror = () => resolve([]);
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  async function extractZipEntries(bytes) {
+    const entries = {};
+    // Find end-of-central-directory
+    let eocd = bytes.length - 22;
+    while (eocd >= 0 && !(bytes[eocd]===0x50&&bytes[eocd+1]===0x4B&&bytes[eocd+2]===0x05&&bytes[eocd+3]===0x06)) eocd--;
+    if (eocd < 0) return entries;
+    const u32 = (p) => bytes[p]|(bytes[p+1]<<8)|(bytes[p+2]<<16)|(bytes[p+3]<<24);
+    const u16 = (p) => bytes[p]|(bytes[p+1]<<8);
+    let cdPos = u32(eocd+16);
+    const cdEnd = cdPos + u32(eocd+12);
+    while (cdPos < cdEnd) {
+      if (bytes[cdPos]!==0x50||bytes[cdPos+1]!==0x4B||bytes[cdPos+2]!==0x01||bytes[cdPos+3]!==0x02) break;
+      const method = u16(cdPos+10);
+      const cSize  = u32(cdPos+20);
+      const fnLen  = u16(cdPos+28);
+      const exLen  = u16(cdPos+30);
+      const cmLen  = u16(cdPos+32);
+      const lOff   = u32(cdPos+42);
+      const fname  = new TextDecoder().decode(bytes.slice(cdPos+46, cdPos+46+fnLen));
+      cdPos += 46 + fnLen + exLen + cmLen;
+      // local header
+      const lFn = u16(lOff+26);
+      const lEx = u16(lOff+28);
+      const dStart = lOff + 30 + lFn + lEx;
+      const comp = bytes.slice(dStart, dStart + cSize);
+      let text = '';
+      if (method === 0) {
+        text = new TextDecoder().decode(comp);
+      } else if (method === 8 && typeof DecompressionStream !== 'undefined') {
+        try {
+          const ds = new DecompressionStream('deflate-raw');
+          const w = ds.writable.getWriter();
+          await w.write(comp); await w.close();
+          const chunks = []; const r = ds.readable.getReader();
+          for (;;) { const {done,value} = await r.read(); if(done) break; chunks.push(value); }
+          const tot = chunks.reduce((s,c)=>s+c.length,0);
+          const out = new Uint8Array(tot); let off=0;
+          chunks.forEach(c=>{out.set(c,off);off+=c.length;});
+          text = new TextDecoder().decode(out);
+        } catch(e) { continue; }
+      }
+      if (text) entries[fname] = text;
+    }
+    return entries;
+  }
+
+  function parseSharedStrings(xml) {
+    const out = [];
+    for (const m of xml.matchAll(/<si>([\s\S]*?)<\/si>/g)) {
+      out.push([...m[1].matchAll(/<t[^>]*>([^<]*)<\/t>/g)].map(t=>t[1]).join(''));
+    }
+    return out;
+  }
+
+  function colIdx(col) {
+    let n=0; for(const c of col.toUpperCase()) n=n*26+c.charCodeAt(0)-64; return n-1;
+  }
+
+  function parseSheetXML(xml, strings) {
+    const rows = []; let headers = null;
+    for (const rm of xml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)) {
+      const cells = {};
+      for (const cm of rm[1].matchAll(/<c r="([A-Z]+)\d+"([^>]*)>([\s\S]*?)<\/c>/g)) {
+        const col=cm[1], attrs=cm[2], inner=cm[3];
+        const vM = inner.match(/<v>([^<]*)<\/v>/);
+        if (!vM) continue;
+        const raw=vM[1], isStr=/t="s"/.test(attrs);
+        cells[colIdx(col)] = isStr ? (strings[parseInt(raw)]||'') : raw;
+      }
+      if (!Object.keys(cells).length) continue;
+      const maxI = Math.max(...Object.keys(cells).map(Number));
+      const arr = Array.from({length:maxI+1},(_,i)=>cells[i]||'');
+      if (!headers) { headers=arr; }
+      else { const obj={}; headers.forEach((h,i)=>{if(h) obj[h]=arr[i]||'';}); rows.push(obj); }
+    }
+    return rows;
+  }
+
   async function runAudit() {
     document.getElementById('upload-screen').style.display = 'none';
     document.getElementById('loading-screen').style.display = 'flex';
 
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 400));
 
     const data = {};
+    const loadingText = document.querySelector('.loading-text');
+
     for (const [key, file] of Object.entries(uploadedFiles)) {
       if (file.name.endsWith('.pdf')) continue;
-      const text = await readFile(file);
-      data[key] = parseCSV(text);
+      if (loadingText) loadingText.textContent = 'READING: ' + file.name.slice(0,35) + '...';
+      await new Promise(r => setTimeout(r, 30));
+      try {
+        const n = file.name.toLowerCase();
+        if (n.endsWith('.xlsx') || n.endsWith('.xls')) {
+          data[key] = await readXLSXasRows(file);
+          console.log('XLSX', key, (data[key]||[]).length, 'rows');
+        } else {
+          const text = await readFile(file);
+          data[key] = parseCSV(text);
+          console.log('CSV', key, (data[key]||[]).length, 'rows');
+        }
+      } catch(err) {
+        console.error('Load error', key, err);
+        data[key] = [];
+      }
     }
 
-    const results = analyze(data);
-    lastAuditResults = results;
-    renderDashboard(results);
+    if (loadingText) loadingText.textContent = 'ANALYZING YOUR BILLING DATA...';
+    await new Promise(r => setTimeout(r, 200));
+
+    let results;
+    try {
+      results = analyze(data);
+      lastAuditResults = results;
+      renderDashboard(results);
+    } catch(err) {
+      console.error('Audit engine error:', err);
+      document.getElementById('loading-screen').style.display = 'none';
+      document.getElementById('upload-screen').style.display = 'flex';
+      alert('Audit error: ' + err.message + '\n\nOpen browser console (F12) for details.');
+      return;
+    }
 
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
