@@ -839,7 +839,6 @@
   .github-step-body code{background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;color:var(--blue);}
 
 </style>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://apis.google.com/js/api.js" async defer onerror="console.warn('Google API script failed to load')"></script>
   <script src="https://accounts.google.com/gsi/client" async defer onerror="console.warn('Google Identity Services failed to load')"></script>
 </head>
@@ -1008,11 +1007,11 @@
   <div class="divider-text">— or drag files manually —</div>
 
   <div class="drop-zone" id="drop-zone">
-    <input type="file" id="file-input" multiple accept=".csv,.xlsx,.xls,.pdf,.x12,.835,.edi">
+    <input type="file" id="file-input" multiple accept=".csv,.pdf,.x12,.835,.edi">
     <div class="drop-icon">📂</div>
     <h3>Drop Your Spry PT Reports Here</h3>
-    <p>Upload CSV/Excel files from Spry PT, or .x12/.835 ERA files.<br>
-    ERA files are automatically sent to the ERA/835 tab. All data processed locally.</p>
+    <p>Upload CSV files exported from Spry PT, or .x12/.835 ERA files.<br>
+    ERA files are automatically routed to the ERA/835 tab. All data processed locally.</p>
   </div>
   <div id="era-auto-notice" style="display:none;background:#0a2a1a;border:1px solid #1a4a2a;border-radius:8px;padding:10px 16px;font-size:12px;color:var(--green);width:100%;max-width:640px;text-align:center;"></div>
 
@@ -1818,47 +1817,54 @@
   }
 
   // ── AUDIT ENGINE ────────────────────────────────────────────────
-  // ── XLSX READER (uses SheetJS if available, otherwise prompts for CSV)
-  async function readXLSXasRows(file) {
-    return new Promise((resolve) => {
-      // If SheetJS loaded successfully, use it
-      if (typeof XLSX !== 'undefined') {
-        const reader = new FileReader();
-        reader.onload = e => {
-          try {
-            const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array', raw:false, cellDates:false});
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
-            console.log('SheetJS parsed', file.name, rows.length, 'rows');
-            resolve(rows);
-          } catch(err) {
-            console.error('SheetJS error:', err);
-            resolve([]);
-          }
-        };
-        reader.onerror = () => resolve([]);
-        reader.readAsArrayBuffer(file);
-        return;
-      }
 
-      // SheetJS not available — try reading as text (works for some XLS formats)
-      console.warn('SheetJS not loaded, attempting text read for', file.name);
-      const reader = new FileReader();
-      reader.onload = e => {
-        try {
-          // Some xlsx files can be read as CSV if they're simple
-          const text = e.target.result;
-          resolve(parseCSV(text));
-        } catch(e) {
-          resolve([]);
-        }
-      };
-      reader.onerror = () => resolve([]);
-      reader.readAsText(file);
-    });
+  async function runAudit() {
+    document.getElementById('upload-screen').style.display = 'none';
+    document.getElementById('loading-screen').style.display = 'flex';
+    await new Promise(r => setTimeout(r, 400));
+    const data = {};
+    const skippedXLSX = [];
+    const loadingText = document.querySelector('.loading-text');
+    for (const [key, file] of Object.entries(uploadedFiles)) {
+      if (file.name.endsWith('.pdf')) continue;
+      const n = file.name.toLowerCase();
+      if (n.endsWith('.xlsx') || n.endsWith('.xls')) {
+        skippedXLSX.push(file.name);
+        continue;
+      }
+      if (loadingText) loadingText.textContent = 'READING: ' + file.name.slice(0,35) + '...';
+      await new Promise(r => setTimeout(r, 30));
+      try {
+        const text = await readFile(file);
+        data[key] = parseCSV(text);
+        console.log('CSV', key, (data[key]||[]).length, 'rows');
+      } catch(err) {
+        console.error('Load error', key, err);
+        data[key] = [];
+      }
+    }
+    if (skippedXLSX.length > 0) {
+      console.warn('Skipped XLSX files (export as CSV from Spry):', skippedXLSX.join(', '));
+    }
+    if (loadingText) loadingText.textContent = 'ANALYZING YOUR BILLING DATA...';
+    await new Promise(r => setTimeout(r, 200));
+    let results;
+    try {
+      results = analyze(data);
+      lastAuditResults = results;
+      renderDashboard(results);
+    } catch(err) {
+      console.error('Audit engine error:', err);
+      document.getElementById('loading-screen').style.display = 'none';
+      document.getElementById('upload-screen').style.display = 'flex';
+      alert('Audit error: ' + err.message + '\n\nCheck browser console (F12) for details.');
+      return;
+    }
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
   }
 
-    // ── CORE ANALYSIS ───────────────────────────────────────────────
+  // ── CORE ANALYSIS ───────────────────────────────────────────────
   function analyze(data) {
     const r = {};
     const comp = data['comprehensive'] || [];
