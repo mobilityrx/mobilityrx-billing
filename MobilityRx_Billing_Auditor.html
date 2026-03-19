@@ -1841,17 +1841,52 @@
     });
   }
 
+  // Decompress a single deflate-raw entry with a 5s timeout
+  async function decompressEntry(compData) {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('decompress timeout')), 5000)
+    );
+    const decompress = (async () => {
+      const ds = new DecompressionStream('deflate-raw');
+      const writer = ds.writable.getWriter();
+      await writer.write(compData);
+      await writer.close();
+      const reader = ds.readable.getReader();
+      const chunks = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      const total = chunks.reduce((s, c) => s + c.length, 0);
+      const out = new Uint8Array(total);
+      let off = 0;
+      for (const c of chunks) { out.set(c, off); off += c.length; }
+      return new TextDecoder().decode(out);
+    })();
+    return Promise.race([decompress, timeout]);
+  }
+
   async function extractZipEntries(bytes) {
     const entries = {};
-    // Find end-of-central-directory
+    // Only extract the files we actually need — skip everything else to avoid hangs
+    const NEEDED = new Set([
+      'xl/sharedStrings.xml',
+      'xl/worksheets/sheet1.xml',
+      'xl/worksheets/sheet2.xml',
+    ]);
+
     let eocd = bytes.length - 22;
     while (eocd >= 0 && !(bytes[eocd]===0x50&&bytes[eocd+1]===0x4B&&bytes[eocd+2]===0x05&&bytes[eocd+3]===0x06)) eocd--;
     if (eocd < 0) return entries;
-    const u32 = (p) => bytes[p]|(bytes[p+1]<<8)|(bytes[p+2]<<16)|(bytes[p+3]<<24);
-    const u16 = (p) => bytes[p]|(bytes[p+1]<<8);
+
+    const u32 = p => bytes[p]|(bytes[p+1]<<8)|(bytes[p+2]<<16)|((bytes[p+3]&0x7F)<<24);
+    const u16 = p => bytes[p]|(bytes[p+1]<<8);
+
     let cdPos = u32(eocd+16);
     const cdEnd = cdPos + u32(eocd+12);
-    while (cdPos < cdEnd) {
+
+    while (cdPos < cdEnd && cdPos < bytes.length - 4) {
       if (bytes[cdPos]!==0x50||bytes[cdPos+1]!==0x4B||bytes[cdPos+2]!==0x01||bytes[cdPos+3]!==0x02) break;
       const method = u16(cdPos+10);
       const cSize  = u32(cdPos+20);
@@ -1861,26 +1896,25 @@
       const lOff   = u32(cdPos+42);
       const fname  = new TextDecoder().decode(bytes.slice(cdPos+46, cdPos+46+fnLen));
       cdPos += 46 + fnLen + exLen + cmLen;
-      // local header
-      const lFn = u16(lOff+26);
-      const lEx = u16(lOff+28);
+
+      // Skip files we don't need — this prevents hanging on large/corrupt entries
+      if (!NEEDED.has(fname)) continue;
+
+      const lFn    = u16(lOff+26);
+      const lEx    = u16(lOff+28);
       const dStart = lOff + 30 + lFn + lEx;
-      const comp = bytes.slice(dStart, dStart + cSize);
+      const comp   = bytes.slice(dStart, dStart + cSize);
+
       let text = '';
-      if (method === 0) {
-        text = new TextDecoder().decode(comp);
-      } else if (method === 8 && typeof DecompressionStream !== 'undefined') {
-        try {
-          const ds = new DecompressionStream('deflate-raw');
-          const w = ds.writable.getWriter();
-          await w.write(comp); await w.close();
-          const chunks = []; const r = ds.readable.getReader();
-          for (;;) { const {done,value} = await r.read(); if(done) break; chunks.push(value); }
-          const tot = chunks.reduce((s,c)=>s+c.length,0);
-          const out = new Uint8Array(tot); let off=0;
-          chunks.forEach(c=>{out.set(c,off);off+=c.length;});
-          text = new TextDecoder().decode(out);
-        } catch(e) { continue; }
+      try {
+        if (method === 0) {
+          text = new TextDecoder().decode(comp);
+        } else if (method === 8) {
+          text = await decompressEntry(comp);
+        }
+      } catch(e) {
+        console.warn('Skipping entry', fname, e.message);
+        continue;
       }
       if (text) entries[fname] = text;
     }
