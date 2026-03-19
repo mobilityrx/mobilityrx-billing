@@ -1037,6 +1037,7 @@
       <button class="nav-tab" id="tab-underpay" onclick="switchMainTab('underpay')">🚨 Underpayments <span class="tab-pill" id="underpay-pill" style="display:none">0</span></button>
       <button class="nav-tab" id="tab-compliance" onclick="switchMainTab('compliance')">✅ Compliance</button>
       <button class="nav-tab" id="tab-github" onclick="switchMainTab('github')">🐙 GitHub Upload</button>
+      <button class="nav-tab" id="tab-spry" onclick="switchMainTab('spry')">&#9889; Spry Export</button>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <div class="topbar-meta" id="audit-date"></div>
@@ -1418,6 +1419,10 @@
         <strong style="color:var(--green);">Alternative — drag &amp; drop:</strong> To upload as a new file instead, go to the <strong>repo root</strong> → click <strong>Add file → Upload files</strong>. This button only appears at the root level, not inside subfolders. GitHub will prompt you to replace the existing file.
       </div>
     </div>
+  </div>
+
+  <div id="view-spry" style="display:none">
+    <!-- Spry Export — rendered by JS -->
   </div>
 
 </div><!-- /dashboard -->
@@ -2580,7 +2585,7 @@
   // ── MAIN TAB SWITCHING ─────────────────────────────────────────
   // (Extended version defined later in the file handles all tabs)
   function switchMainTab(tab) {
-    const views = ['billing','compliance','era','eob','underpay','github'];
+    const views = ['billing','compliance','era','eob','underpay','github','spry'];
     views.forEach(v => {
       const el = document.getElementById('view-'+v);
       if(el) el.style.display = (v===tab) ? 'block' : 'none';
@@ -4041,6 +4046,177 @@ IEA*1*000000001~`;
     a.download='MobilityRx_Billing_Auditor.html'; a.click();
   }
 
+</script>
+
+<style id="spry-export-styles">
+.spry-panel{padding:28px 32px;max-width:1100px}
+.spry-header-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;gap:16px;flex-wrap:wrap}
+.spry-title{font-size:22px;font-weight:700;color:#f0f0f0;margin:0 0 4px 0}
+.spry-subtitle{font-size:13px;color:#888;margin:0}
+.spry-header-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spry-btn-primary{background:#e63946;color:white;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.spry-btn-primary:hover:not(:disabled){background:#c62d39;transform:translateY(-1px)}
+.spry-btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.spry-btn-primary.running{animation:spryPulse 1.4s ease-in-out infinite}
+@keyframes spryPulse{0%,100%{opacity:1}50%{opacity:.6}}
+.spry-btn-secondary{background:#1e2530;color:#ccc;border:1px solid #2a3140;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.spry-btn-secondary:hover{background:#252d3d;color:#f0f0f0;border-color:#3a4455}
+.spry-config-row{display:flex;gap:32px;align-items:center;background:#111820;border:1px solid #1e2530;border-radius:10px;padding:16px 20px;margin-bottom:20px;flex-wrap:wrap}
+.spry-config-item{display:flex;flex-direction:column;gap:6px}
+.spry-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em}
+.spry-config-inputs{display:flex;align-items:center;gap:8px}
+.spry-date-input{background:#1a2232;border:1px solid #2a3445;color:#e0e0e0;padding:7px 10px;border-radius:6px;font-size:13px;font-family:monospace}
+.spry-date-sep{color:#666;font-size:13px}
+.spry-quick-btns{display:flex;gap:6px}
+.spry-quick{background:#1a2232;border:1px solid #2a3445;color:#aaa;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;transition:all 0.15s}
+.spry-quick:hover,.spry-quick.active{background:#e63946;border-color:#e63946;color:white}
+.spry-save-note{font-size:13px;color:#aaa;font-family:monospace}
+.spry-progress-bar-wrap{background:#111820;border-radius:4px;height:6px;margin-bottom:8px;overflow:hidden;border:1px solid #1e2530}
+.spry-progress-bar{height:100%;background:linear-gradient(90deg,#e63946,#ff6b6b);border-radius:4px;transition:width .3s ease}
+.spry-progress-label{font-size:12px;color:#888;margin-bottom:16px;font-family:monospace}
+.spry-summary-row{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap}
+.spry-summary-stat{background:#111820;border:1px solid #1e2530;border-radius:10px;padding:14px 20px;min-width:120px;text-align:center}
+.spry-stat-num{font-size:24px;font-weight:700;color:#e63946}
+.spry-stat-label{font-size:11px;color:#777;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.spry-requirements{background:#0d1520;border:1px solid #1a2535;border-left:3px solid #e63946;border-radius:8px;padding:12px 16px;font-size:13px;color:#aaa;margin-bottom:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spry-req-link{color:#e63946;text-decoration:none;margin-left:auto}
+.spry-req-link:hover{text-decoration:underline}
+.spry-reports-table{width:100%;border-collapse:collapse;background:#0d1118;border-radius:10px;overflow:hidden;border:1px solid #1a2535}
+.spry-reports-table thead tr{background:#111820}
+.spry-reports-table th{padding:12px 16px;text-align:left;font-size:11px;font-weight:600;color:#777;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #1a2535}
+.spry-report-row{border-bottom:1px solid #141c28;transition:background .15s}
+.spry-report-row:last-child{border-bottom:none}
+.spry-report-row:hover{background:#111820}
+.spry-reports-table td{padding:14px 16px;vertical-align:top}
+.spry-report-label{font-size:14px;font-weight:500;color:#e0e0e0;margin-bottom:3px}
+.spry-report-desc{font-size:12px;color:#666}
+.spry-report-status{white-space:nowrap;width:220px}
+.spry-report-actions{width:160px}
+.spry-badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:12px;font-weight:600;font-family:monospace}
+.spry-badge.pending{background:#1a2535;color:#666}
+.spry-badge.success{background:#0d2a1a;color:#4ade80;border:1px solid #166534}
+.spry-badge.error{background:#2a0d0d;color:#f87171;border:1px solid #7f1d1d}
+.spry-badge.running{background:#1a2535;color:#fbbf24;border:1px solid #78350f;animation:spryPulse 1s ease-in-out infinite}
+.spry-filesize{font-size:11px;color:#666;margin-left:6px;font-family:monospace}
+.spry-error-msg{font-size:11px;color:#f87171;display:block;margin-top:4px}
+.spry-load-btn{background:#152035;color:#60a5fa;border:1px solid #1e3a5f;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.spry-load-btn:hover{background:#1e3a5f;color:#93c5fd}
+.spry-footer-note{display:flex;justify-content:space-between;padding:12px 0 0;font-size:11px;color:#555;border-top:1px solid #141c28;margin-top:16px;flex-wrap:wrap;gap:8px}
+</style>
+<script>
+(function(){
+var CFG={orgId:229,practiceId:1311,apiBase:"https://provider.sprypt.com/apis/billing/v1/report"};
+var REPORTS=[
+{id:"comprehensive-billing",label:"Comprehensive Billing",ep:"claim-summary",kpi:"claim-summary",rid:"COMPREHENSIVE",dp:"service",desc:"All charges: billed / allowed / paid / balance"},
+{id:"all-visits",label:"All Visits",ep:"all-visits",kpi:"all-visits",rid:"ALL",dp:"service",desc:"Every visit with CPT codes and claim status"},
+{id:"adjustment",label:"Adjustment",ep:"adjustment-report",kpi:"adjustment-report",rid:"WRITE_OFF_PAYMENT",dp:"transaction",desc:"All adjustments, write-offs and reason codes"},
+{id:"appt-tracking",label:"Appointment Tracking",ep:"appointment-tracking-summary-report",kpi:"appointment-tracking-summary",rid:"ALL",dp:"service",desc:"Attendance, cancellations, no-shows"},
+{id:"copay",label:"Copay Amount",ep:"copay",kpi:"copay",rid:"COPAY",dp:"service",desc:"Copay amounts collected vs expected per visit"},
+{id:"payment-collection",label:"Payment Collection",ep:"payment-report",kpi:"payment-report",rid:"PATIENT_PAYMENT",dp:"transaction",desc:"All patient and insurance payments received"},
+{id:"pri-sec-pay",label:"Primary And Secondary Payments",ep:"payment-report",kpi:"payment-report",rid:"INSURANCE_PAYMENT",dp:"transaction",desc:"Primary and secondary insurance payment detail"},
+{id:"aging-pp-ss",label:"Primary Paid Secondary Submitted Aging",ep:"ageing-primary-paid-secondary-submitted",kpi:"ageing-primary-paid-secondary-submitted",rid:"PRIMARY_PAID",dp:"service",desc:"AR aging: primary paid, secondary submitted"},
+{id:"aging-ps-sd",label:"Primary Submitted Secondary Draft Aging",ep:"ageing-primary-submitted-secondary-draft",kpi:"ageing-primary-submitted-secondary-draft",rid:"PRIMARY_SUBMITTED",dp:"service",desc:"AR aging: primary submitted, secondary draft"},
+{id:"aging-ps-paid",label:"Primary And Secondary Paid Aging",ep:"ageing-primary-secondary-paid",kpi:"ageing-primary-secondary-paid",rid:"PRIMARY_ONLY_SUBMITTED",dp:"service",desc:"AR aging: both primary and secondary fully paid"}
+];
+var ST={running:false,results:[],loaded:{}};
+function dr(n){var now=new Date(),end=new Date(now.getFullYear(),now.getMonth()+1,0),start=new Date(now.getFullYear(),now.getMonth()-n,1);var f=function(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);};return{start:f(start),end:f(end)};}
+function toCsv(data){var rows=[];if(Array.isArray(data)){rows=data;}else{["data","response","content","result"].forEach(function(k){if(!rows.length&&data&&Array.isArray(data[k])&&data[k].length)rows=data[k];});if(!rows.length)Object.keys(data||{}).forEach(function(k){if(!rows.length&&Array.isArray(data[k])&&data[k].length)rows=data[k];});}if(!rows.length)return null;var h=Object.keys(rows[0]);return[h.map(function(x){return'"'+String(x).replace(/"/g,'""')+'"'}).join(",")].concat(rows.map(function(r){return h.map(function(x){return'"'+String(r[x]==null?"":r[x]).replace(/"/g,'""')+'"'}).join(",")})).join("\n");}
+function dlCsv(csv,name){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+window.sprySetMonths=function(n,btn){var d=dr(n);var s=document.getElementById("spry-start"),e=document.getElementById("spry-end");if(s)s.value=d.start;if(e)e.value=d.end;document.querySelectorAll(".spry-quick").forEach(function(b){b.classList.remove("active")});if(btn)btn.classList.add("active");};
+window.renderSpryTab=function(){
+var el=document.getElementById("view-spry");if(!el)return;
+var d=dr(6),ST_=ST,R=REPORTS,C=CFG;
+var done=ST_.results.filter(function(r){return r.s==="ok";}).length,total=R.length;
+var pct=total?Math.round(done/total*100):0;
+var tRows=ST_.results.filter(function(r){return r.s==="ok";}).reduce(function(a,r){return a+r.n;},0);
+var tKb=(ST_.results.filter(function(r){return r.s==="ok";}).reduce(function(a,r){return a+r.csv.length;},0)/1024).toFixed(0);
+var errs=ST_.results.filter(function(r){return r.s==="err";}).length;
+var rows=R.map(function(r){
+var x=ST_.results.find(function(z){return z.id===r.id;});
+var badge='<span class="spry-badge pending">Pending</span>',extra="",act="";
+if(x){if(x.s==="ok"){badge='<span class="spry-badge success">&#10003; '+x.n.toLocaleString()+' rows</span>';extra='<span class="spry-filesize">'+(x.csv.length/1024).toFixed(1)+' KB</span>';act='<button class="spry-load-btn" onclick="spryLoadOne(\'"+r.id+"\')">'+'Load into Audit</button>';}
+else if(x.s==="err"){badge='<span class="spry-badge error">&#10005; Error</span>';extra='<span class="spry-error-msg">'+x.err+'</span>';}
+else if(x.s==="run"){badge='<span class="spry-badge running">&#8987; Running&hellip;</span>';}}
+return '<tr class="spry-report-row" id="spry-row-'+r.id+'"><td><div class="spry-report-label">'+r.label+'</div><div class="spry-report-desc">'+r.desc+'</div></td><td class="spry-report-status">'+badge+extra+'</td><td class="spry-report-actions">'+act+'</td></tr>';
+}).join("");
+el.innerHTML=
+"<div class='spry-panel'>"
++"<div class='spry-header-row'><div><h2 class='spry-title'>&#9889; Spry Export Automation</h2><p class='spry-subtitle'>Pulls all 10 billing reports from your live Spry session &mdash; no re-login required</p></div>"
++"<div class='spry-header-actions'>"
++(done>0?"<button class='spry-btn-secondary' onclick='spryDlAll()'>&#8595; Download All CSVs</button>":"")
++(done>0?"<button class='spry-btn-secondary' onclick='spryLoadAll()'>&#128202; Load All into Audit</button>":"")
++"<button class='spry-btn-primary"+(ST_.running?" running":"")+"' onclick='spryRun()' "+(ST_.running?"disabled":"")+">"+( ST_.running?"&#8987; Exporting&hellip;":"&#9654; Run Monthly Audit Export")+"</button>"
++"</div></div>"
++"<div class='spry-config-row'>"
++"<div class='spry-config-item'><label class='spry-label'>Date Range</label><div class='spry-config-inputs'><input type='date' id='spry-start' value='"+d.start+"' class='spry-date-input'><span class='spry-date-sep'>&rarr;</span><input type='date' id='spry-end' value='"+d.end+"' class='spry-date-input'></div></div>"
++"<div class='spry-config-item'><label class='spry-label'>Quick Range</label><div class='spry-quick-btns'><button class='spry-quick' onclick='sprySetMonths(1,this)'>1 mo</button><button class='spry-quick active' onclick='sprySetMonths(6,this)'>6 mo</button><button class='spry-quick' onclick='sprySetMonths(12,this)'>12 mo</button></div></div>"
++"<div class='spry-config-item'><label class='spry-label'>Save Location</label><div class='spry-save-note'>&#128193; ~/Desktop/Spry Exports/</div></div>"
++"</div>"
++(ST_.running?"<div class='spry-progress-bar-wrap'><div class='spry-progress-bar' id='spry-pb' style='width:"+pct+"%'></div></div><div class='spry-progress-label' id='spry-pl'>Starting&hellip;</div>":"")
++(done>0?"<div class='spry-summary-row'><div class='spry-summary-stat'><div class='spry-stat-num'>"+done+"/"+total+"</div><div class='spry-stat-label'>Exported</div></div><div class='spry-summary-stat'><div class='spry-stat-num'>"+tRows.toLocaleString()+"</div><div class='spry-stat-label'>Total Rows</div></div><div class='spry-summary-stat'><div class='spry-stat-num'>"+tKb+" KB</div><div class='spry-stat-label'>Total Data</div></div><div class='spry-summary-stat'><div class='spry-stat-num'>"+errs+"</div><div class='spry-stat-label'>Errors</div></div></div>":"")
++"<div class='spry-requirements'>&#128272; <strong>Requirement:</strong> You must be logged into Spry in this browser. The export uses your existing session &mdash; no passwords stored or transmitted. <a href='https://provider.sprypt.com/billing/reports' target='_blank' class='spry-req-link'>Open Spry &#8594;</a></div>"
++"<table class='spry-reports-table'><thead><tr><th>Report</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+rows+"</tbody></table>"
++"<div class='spry-footer-note'><span>&#128274; All data processed locally &middot; No PHI transmitted &middot; HIPAA compliant</span><span>Org:"+C.orgId+" &middot; Practice:"+C.practiceId+" &middot; provider.sprypt.com</span></div>"
++"</div>";
+};
+window.spryRun=async function(){
+if(ST.running)return;
+var sv=document.getElementById("spry-start")&&document.getElementById("spry-start").value||dr(6).start;
+var ev=document.getElementById("spry-end")&&document.getElementById("spry-end").value||dr(6).end;
+ST.running=true;ST.results=[];window.renderSpryTab();
+for(var i=0;i<REPORTS.length;i++){
+var r=REPORTS[i];
+ST.results=ST.results.filter(function(x){return x.id!==r.id;});
+ST.results.push({id:r.id,s:"run",n:0,csv:"",fn:"",err:""});
+var pl=document.getElementById("spry-pl");if(pl)pl.textContent="Fetching: "+r.label+"...";
+var pb=document.getElementById("spry-pb");if(pb){var dn=ST.results.filter(function(x){return x.s==="ok"||x.s==="err";}).length;pb.style.width=Math.round(dn/REPORTS.length*100)+"%";}
+var rowEl=document.getElementById("spry-row-"+r.id);if(rowEl){var sc=rowEl.querySelector(".spry-report-status");if(sc)sc.innerHTML='<span class="spry-badge running">&#8987; Running&hellip;</span>';}
+var dk=r.dp==="transaction"?"TRANSACTION_DATE":"SERVICE_DATE";
+var p=new URLSearchParams({date_filter_key:dk,start:sv+"T00:00",end:ev+"T23:59",period:"custom",organisation_id:CFG.orgId,kpi:r.kpi,practice_id:CFG.practiceId,report_id:r.rid,size:10000,from:sv+"T00:00",to:ev+"T23:59"});
+var url=CFG.apiBase+"/"+r.ep+"?"+p;
+try{
+var res=await fetch(url,{method:"GET",credentials:"include",headers:{"Accept":"application/json"}});
+if(!res.ok)throw new Error("HTTP "+res.status);
+var data=await res.json();
+var csv=toCsv(data);
+var n=csv?csv.split("\n").length-1:0;
+var fn=r.label.replace(/\s+/g,"_")+"_"+sv+"_to_"+ev+".csv";
+ST.loaded[r.id]=csv;
+ST.results=ST.results.filter(function(x){return x.id!==r.id;});
+ST.results.push({id:r.id,s:"ok",n:n,csv:csv||"",fn:fn,err:""});
+}catch(e){
+ST.results=ST.results.filter(function(x){return x.id!==r.id;});
+ST.results.push({id:r.id,s:"err",n:0,csv:"",fn:"",err:e.message.slice(0,80)});
+}
+await new Promise(function(res){setTimeout(res,350);});
+}
+ST.running=false;
+ST.results.filter(function(r){return r.s==="ok"&&r.csv;}).forEach(function(r,i){setTimeout(function(){dlCsv(r.csv,r.fn);},i*300);});
+window.renderSpryTab();
+};
+window.spryLoadOne=function(id){
+var x=ST.results.find(function(r){return r.id===id&&r.s==="ok";});if(!x||!x.csv)return;
+var f=new File([new Blob([x.csv],{type:"text/csv"})],x.fn,{type:"text/csv"});
+if(typeof handleFiles==="function"){handleFiles([f]);if(typeof switchMainTab==="function")switchMainTab("billing");}
+else{dlCsv(x.csv,x.fn);alert("Downloaded "+x.fn+" — drag into audit drop zone.");}
+};
+window.spryLoadAll=function(){
+var ok=ST.results.filter(function(r){return r.s==="ok"&&r.csv;});if(!ok.length){alert("Run the export first.");return;}
+var files=ok.map(function(r){return new File([new Blob([r.csv],{type:"text/csv"})],r.fn,{type:"text/csv"});});
+if(typeof handleFiles==="function"){handleFiles(files);if(typeof switchMainTab==="function")switchMainTab("billing");setTimeout(function(){if(typeof runAudit==="function")runAudit();},600);}
+else{ok.forEach(function(r,i){setTimeout(function(){dlCsv(r.csv,r.fn);},i*300);});alert(files.length+" CSVs downloading — drag into Billing Audit drop zone.");}
+};
+window.spryDlAll=function(){
+var ok=ST.results.filter(function(r){return r.s==="ok"&&r.csv;});if(!ok.length){alert("Nothing to download yet.");return;}
+ok.forEach(function(r,i){setTimeout(function(){dlCsv(r.csv,r.fn);},i*300);});
+};
+var _orig=window.switchMainTab;
+window.switchMainTab=function(tab){
+var sv=document.getElementById("view-spry"),sb=document.getElementById("tab-spry");
+if(tab==="spry"){document.querySelectorAll('[id^="view-"]').forEach(function(e){e.style.display="none";});document.querySelectorAll(".nav-tab").forEach(function(b){b.classList.remove("active");});if(sv)sv.style.display="block";if(sb)sb.classList.add("active");window.renderSpryTab();return;}
+if(sv)sv.style.display="none";if(sb)sb.classList.remove("active");_orig(tab);
+};
+})();
 </script>
 </body>
 </html>
