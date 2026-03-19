@@ -1153,10 +1153,11 @@
     <!-- CHARGE ID WORKLIST -->
     <div class="panel">
       <div class="section-header">
-        <div class="section-title">📋 Charge ID Worklist — Send to Billing Team</div>
-        <button class="download-btn" onclick="downloadWorklist()">⬇ Download CSV</button>
+        <div class="section-title">📋 Charge ID Worklist — Billing Team</div>
+        <button class="download-btn" onclick="downloadWorklist()">⬇ Download All (Prioritized)</button>
       </div>
-      <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Every flagged Charge ID with the specific issue. Download and send directly to Spry PT / your billing team.</p>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Items sorted by urgency. Download the prioritized CSV and send to your billing team — they work top to bottom.</p>
+      <div id="triage-summary" style="margin-bottom:16px;"></div>
       <div class="worklist-tabs" id="worklist-tabs"></div>
       <div id="worklist-panels"></div>
     </div>
@@ -2315,6 +2316,53 @@
   function renderWorklist(worklist) {
     globalWorklist = worklist;
 
+    // ── TRIAGE SUMMARY
+    const triageEl = document.getElementById('triage-summary');
+    if (triageEl) {
+      const urgent = [
+        ...(worklist.denied||[]),
+        ...(worklist.evalFrequency||[]),
+        ...(worklist.obsoleteCPT||[]),
+        ...(worklist.needsInfo||[]),
+      ];
+      const urgentDrafts = (worklist.draft||[]).filter(r => {
+        const days = (Date.now() - new Date(r.serviceDate)) / 86400000;
+        return days > 30;
+      });
+      const high = [
+        ...(worklist.reconciliation||[]),
+        ...(worklist.stuck||[]),
+        ...urgentDrafts,
+      ];
+      const urgentTotal = urgent.reduce((s,r)=>s+(r.billed||0),0);
+      const highTotal   = high.reduce((s,r)=>s+(r.billed||0),0);
+      const medCount    = (worklist.pending||[]).length + (worklist.underbilling||[]).length;
+
+      triageEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+          <div style="background:#1f0a0a;border:1px solid #4a1a1a;border-radius:8px;padding:14px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px;">🔴 Urgent — Act Today</div>
+            <div style="font-size:26px;font-weight:700;color:var(--red);font-family:'Playfair Display',serif;">${urgent.length} claims</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">${fmt(urgentTotal)} at risk</div>
+            <div style="font-size:11px;color:#c08080;margin-top:6px;line-height:1.5;">Denied/rejected, obsolete CPT,<br>eval violations, needs info</div>
+          </div>
+          <div style="background:#1f1a0a;border:1px solid #4a3a1a;border-radius:8px;padding:14px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px;">🟡 High — This Week</div>
+            <div style="font-size:26px;font-weight:700;color:var(--amber);font-family:'Playfair Display',serif;">${high.length} claims</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">${fmt(highTotal)} at risk</div>
+            <div style="font-size:11px;color:#c0a060;margin-top:6px;line-height:1.5;">Payment gaps, stuck in queue,<br>drafts older than 30 days</div>
+          </div>
+          <div style="background:#0a1020;border:1px solid #1a2a4a;border-radius:8px;padding:14px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px;">⚪ Review — When Available</div>
+            <div style="font-size:26px;font-weight:700;color:var(--blue);font-family:'Playfair Display',serif;">${medCount} claims</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Pending review + underbilling</div>
+            <div style="font-size:11px;color:#6080a0;margin-top:6px;line-height:1.5;">Self-pay underbilling<br>tracked separately</div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px;">💡 <strong style="color:var(--text);">Download All (Prioritized)</strong> exports one CSV sorted 1-URGENT → 4-LOW so your billing team works top-to-bottom.</p>
+      `;
+    }
+
     const tabs = [
       { key: 'draft',               label: '🔴 Never Submitted',      cls: '' },
       { key: 'denied',              label: '🔴 Denied/Rejected',       cls: '' },
@@ -2338,7 +2386,10 @@
       <div class="worklist-content ${i===0?'active':''}" id="panel-${t.key}">
         <div class="worklist-actions">
           <input class="worklist-search" placeholder="Search charge ID or payer..." oninput="filterTable('table-${t.key}', this.value)">
-          <span style="color:var(--muted);font-size:12px">${worklist[t.key].length} charges</span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="color:var(--muted);font-size:12px">${worklist[t.key].length} charges</span>
+            <button class="download-btn" onclick="downloadCurrentTab('${t.key}')" style="padding:5px 12px;font-size:11px;">⬇ Export Tab</button>
+          </div>
         </div>
         <table class="worklist-table" id="table-${t.key}">
           <thead>
@@ -2387,22 +2438,84 @@
     });
   }
 
-  function downloadWorklist() {
-    const all = [];
-    for (const [type, rows] of Object.entries(globalWorklist)) {
-      rows.forEach(r => {
-        all.push([
-          r.chargeId, r.serviceDate, r.payer, r.provider,
-          r.cpt, r.billed.toFixed(2), r.status, r.issue, r.action
-        ].join(','));
-      });
+  // ── CSV helpers (proper quoting)
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }
+  function csvRow(arr) { return arr.map(csvCell).join(','); }
+
+  function triagePriority(key, row) {
+    if (['denied','evalFrequency','obsoleteCPT','needsInfo'].includes(key)) return '1-URGENT';
+    if (key === 'draft') {
+      const days = (Date.now() - new Date(row.serviceDate)) / 86400000;
+      return days > 60 ? '1-URGENT' : days > 30 ? '2-HIGH' : '3-MEDIUM';
     }
-    const csv = 'Charge ID,Service Date,Payer,Provider,CPT,Billed Amount,Status,Issue,Action Required\n' + all.join('\n');
-    const blob = new Blob([csv], {type:'text/csv'});
+    if (['reconciliation','stuck'].includes(key)) return '2-HIGH';
+    if (key === 'pending') return '3-MEDIUM';
+    if (key === 'underbilling') return '3-MEDIUM';
+    if (key === 'underbillingSelfPay') return '4-LOW';
+    return '3-MEDIUM';
+  }
+
+  function triageCategory(key) {
+    const map = {
+      draft:'Never Submitted', denied:'Denied/Rejected', stuck:'Stuck in Queue',
+      needsInfo:'Needs Information', evalFrequency:'Eval Frequency Violation',
+      obsoleteCPT:'Obsolete CPT Code', reconciliation:'Payment Gap',
+      pending:'Pending Review', underbilling:'Underbilling (Insurance)',
+      underbillingSelfPay:'Underbilling (Self Pay)',
+    };
+    return map[key] || key;
+  }
+
+  function downloadWorklist() {
+    const headers = ['Priority','Category','Charge ID','Service Date','Payer','Provider','CPT','Billed Amount','Status','Issue','Action Required'];
+    const rows = [csvRow(headers)];
+    const tabOrder = ['denied','evalFrequency','obsoleteCPT','needsInfo','draft','reconciliation','stuck','pending','underbilling','underbillingSelfPay'];
+    for (const key of tabOrder) {
+      const tabRows = globalWorklist[key] || [];
+      const sorted = [...tabRows].sort((a,b) => (b.billed||0) - (a.billed||0));
+      for (const r of sorted) {
+        rows.push(csvRow([
+          triagePriority(key, r),
+          triageCategory(key),
+          r.chargeId||'', r.serviceDate||'', r.payer||'', r.provider||'',
+          r.cpt||'', r.billed > 0 ? r.billed.toFixed(2) : '',
+          r.status||'', r.issue||'', r.action||'',
+        ]));
+      }
+    }
+    const csv = '\uFEFF' + rows.join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'BillingWorklist_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadCurrentTab(key) {
+    const tabRows = globalWorklist[key] || [];
+    const sorted = [...tabRows].sort((a,b) => (b.billed||0) - (a.billed||0));
+    const headers = ['Priority','Charge ID','Service Date','Payer','Provider','CPT','Billed Amount','Status','Issue','Action Required'];
+    const rows = [csvRow(headers)];
+    for (const r of sorted) {
+      rows.push(csvRow([
+        triagePriority(key, r),
+        r.chargeId||'', r.serviceDate||'', r.payer||'', r.provider||'',
+        r.cpt||'', r.billed > 0 ? r.billed.toFixed(2) : '',
+        r.status||'', r.issue||'', r.action||'',
+      ]));
+    }
+    const csv = '\uFEFF' + rows.join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = triageCategory(key).replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
   }
