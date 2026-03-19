@@ -1896,25 +1896,51 @@
   }
 
   function colIdx(col) {
-    let n=0; for(const c of col.toUpperCase()) n=n*26+c.charCodeAt(0)-64; return n-1;
+    let n=0;
+    for (const c of col.toUpperCase()) n = n*26 + c.charCodeAt(0) - 64;
+    return n-1;
   }
 
   function parseSheetXML(xml, strings) {
-    const rows = []; let headers = null;
-    for (const rm of xml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)) {
+    const rows = [];
+    let headers = null;
+
+    // Split by row tags — more reliable than matchAll with dotall
+    const rowChunks = xml.split('<row');
+    for (let ri = 1; ri < rowChunks.length; ri++) {
+      const chunk = rowChunks[ri];
+      const rowEnd = chunk.indexOf('</row>');
+      const rowContent = rowEnd >= 0 ? chunk.slice(0, rowEnd) : chunk;
+
       const cells = {};
-      for (const cm of rm[1].matchAll(/<c r="([A-Z]+)\d+"([^>]*)>([\s\S]*?)<\/c>/g)) {
-        const col=cm[1], attrs=cm[2], inner=cm[3];
-        const vM = inner.match(/<v>([^<]*)<\/v>/);
-        if (!vM) continue;
-        const raw=vM[1], isStr=/t="s"/.test(attrs);
-        cells[colIdx(col)] = isStr ? (strings[parseInt(raw)]||'') : raw;
+      // Split by cell tags
+      const cChunks = rowContent.split('<c ');
+      for (let ci = 1; ci < cChunks.length; ci++) {
+        const cChunk = cChunks[ci];
+        // Get cell reference (e.g. r="A1")
+        const refM = cChunk.match(/r="([A-Z]+)\d+"/);
+        if (!refM) continue;
+        const col = refM[1];
+        // Check if string type
+        const isStr = /t="s"/.test(cChunk.slice(0, cChunk.indexOf('>')));
+        // Get value
+        const vStart = cChunk.indexOf('<v>');
+        const vEnd = cChunk.indexOf('</v>');
+        if (vStart < 0 || vEnd < 0) continue;
+        const raw = cChunk.slice(vStart + 3, vEnd);
+        cells[colIdx(col)] = isStr ? (strings[parseInt(raw)] || '') : raw;
       }
+
       if (!Object.keys(cells).length) continue;
       const maxI = Math.max(...Object.keys(cells).map(Number));
-      const arr = Array.from({length:maxI+1},(_,i)=>cells[i]||'');
-      if (!headers) { headers=arr; }
-      else { const obj={}; headers.forEach((h,i)=>{if(h) obj[h]=arr[i]||'';}); rows.push(obj); }
+      const arr = Array.from({length: maxI+1}, (_, i) => cells[i] || '');
+      if (!headers) {
+        headers = arr;
+      } else {
+        const obj = {};
+        headers.forEach((h, i) => { if (h) obj[h] = arr[i] || ''; });
+        rows.push(obj);
+      }
     }
     return rows;
   }
