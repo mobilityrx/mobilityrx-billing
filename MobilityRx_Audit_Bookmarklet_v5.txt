@@ -45,7 +45,7 @@ function checkContractedRate(claim){
   const paid=parseFloat(claim.total_paid_amt)||0;
   const allowed=parseFloat(claim.total_allowed_amt)||0;
   const billed=parseFloat(claim.total_billed_amt)||0;
-  const cpts=(claim.cpt_codes_billed||'').split(',').map(c=>c.trim());
+  const cpts=String(claim.cpt_codes_billed||'').split(',').map(c=>c.trim());
   const flags=[];
 
   // Determine visit type
@@ -97,7 +97,7 @@ function checkContractedRate(claim){
 // ── LAYER 3: charge capture / under-billing ────────────────────────────────
 function checkChargCapture(claim){
   const flags=[];
-  const cpts=(claim.cpt_codes_billed||'').split(',').map(c=>c.trim()).filter(Boolean);
+  const cpts=String(claim.cpt_codes_billed||'').split(',').map(c=>c.trim()).filter(Boolean);
   const apptType=(claim.appointment_type||claim.visit_type||'').toLowerCase();
   const payer=(claim.payer_name||'').toLowerCase();
   const units=parseInt(claim.total_units_billed||claim.units||0)||cpts.length;
