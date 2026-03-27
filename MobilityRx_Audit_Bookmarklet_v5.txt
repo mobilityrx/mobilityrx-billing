@@ -1,1 +1,419 @@
+javascript:(async()=>{ if(!location.hostname.includes('sprypt.com')){alert('Run this in Spry!');return;} const td=JSON.parse(localStorage.getItem('Spry/token')||'{}'); if(!td?.access_token){alert('Log into Spry first, then click the bookmark.');return;} const d=document;const _today=new Date().toISOString().split('T')[0];const _lms=new Date(new Date().getFullYear(),new Date().getMonth()-1,1).toISOString().split('T')[0];const _lme=new Date(new Date().getFullYear(),new Date().getMonth(),0).toISOString().split('T')[0];const _tms=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0];const _tys=new Date(new Date().getFullYear(),0,1).toISOString().split('T')[0];const dp=d.createElement('div');dp.id='mrx-dp';dp.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace';dp.innerHTML='<div style="background:#0a0f1e;border:1px solid #1e3a5f;border-radius:12px;padding:36px 40px;min-width:480px;box-shadow:0 0 60px rgba(0,100,255,.15)"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><div style="width:8px;height:8px;background:#00ff88;border-radius:50%"></div><span style="color:#e2e8f0;font-size:17px;font-weight:700">⚡ MobilityRx Audit</span></div><div style="color:#475569;font-size:11px;margin-bottom:20px;padding-left:18px">Select date range then click Run Audit</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px"><div><div style="color:#64748b;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">FROM</div><input type=date id="mrx-from" value="2025-09-01" style="width:100%;background:#0f172a;border:1px solid #1e3a5f;color:#e2e8f0;padding:9px 11px;border-radius:7px;font-family:Courier New;font-size:13px;outline:none"></div><div><div style="color:#64748b;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">TO</div><input type=date id="mrx-to" value="'+_today+'" style="width:100%;background:#0f172a;border:1px solid #1e3a5f;color:#e2e8f0;padding:9px 11px;border-radius:7px;font-family:Courier New;font-size:13px;outline:none"></div></div><div style="display:flex;gap:6px;margin-bottom:16px"><button onclick="f=document.getElementById(chr39mrx-fromchr39);t=document.getElementById(chr39mrx-tochr39);f.value=chr39'+_tms+'chr39;t.value=chr39'+_today+'chr39" style="flex:1;background:#0f172a;border:1px solid #1e3a5f;color:#64748b;padding:6px;border-radius:5px;cursor:pointer;font-size:10px">This Month</button><button onclick="f=document.getElementById(chr39mrx-fromchr39);t=document.getElementById(chr39mrx-tochr39);f.value=chr39'+_lms+'chr39;t.value=chr39'+_lme+'chr39" style="flex:1;background:#0f172a;border:1px solid #1e3a5f;color:#64748b;padding:6px;border-radius:5px;cursor:pointer;font-size:10px">Last Month</button><button onclick="f=document.getElementById(chr39mrx-fromchr39);t=document.getElementById(chr39mrx-tochr39);f.value=chr39'+_tys+'chr39;t.value=chr39'+_today+'chr39" style="flex:1;background:#0f172a;border:1px solid #1e3a5f;color:#64748b;padding:6px;border-radius:5px;cursor:pointer;font-size:10px">This Year</button><button onclick="f=document.getElementById(chr39mrx-fromchr39);t=document.getElementById(chr39mrx-tochr39);f.value=chr39'+'2025-09-01'+'chr39;t.value=chr39'+_today+'chr39" style="flex:1;background:#0f172a;border:1px solid #1e3a5f;color:#64748b;padding:6px;border-radius:5px;cursor:pointer;font-size:10px">All</button></div><div style="display:flex;gap:10px"><button id="mrx-runbtn" style="flex:1;background:linear-gradient(135deg,rgba(0,255,136,.12),rgba(0,180,255,.12));border:1px solid rgba(0,255,136,.3);color:#00ff88;padding:12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700">▶ Run Audit</button><button onclick="document.getElementById(chr39mrx-dpchr39).remove()" style="background:#0f172a;border:1px solid #1e3a5f;color:#475569;padding:12px 16px;border-radius:8px;cursor:pointer;font-size:12px">✕</button></div></div>';dp.innerHTML=dp.innerHTML.replace(/chr39/g,"'");d.body.appendChild(dp);document.getElementById('mrx-runbtn').addEventListener('click',async function(){const FROM=document.getElementById('mrx-from').value;const TO=document.getElementById('mrx-to').value;if(!FROM||!TO){alert('Select both dates');return;}dp.remove();const ov=d.createElement('div'); ov.id='mrx-ov'; ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:Courier New,monospace'; ov.innerHTML='<div style="background:#0a0f1e;border:1px solid #1e3a5f;border-radius:12px;padding:40px;min-width:460px;box-shadow:0 0 60px rgba(0,100,255,.15)"><div style="color:#00ff88;font-size:17px;font-weight:700;margin-bottom:18px">⚡ MobilityRx Audit</div><div id="mrx-s" style="color:#94a3b8;font-size:13px;margin-bottom:14px">Loading...</div><div style="background:#0f172a;border-radius:6px;height:6px;margin-bottom:14px"><div id="mrx-b" style="height:100%;background:linear-gradient(90deg,#00ff88,#00b4ff);width:4%;transition:width .4s;border-radius:6px"></div></div><div id="mrx-l" style="color:#475569;font-size:11px;line-height:1.8;max-height:140px;overflow-y:auto"></div></div>'; d.body.appendChild(ov); const ss=t=>d.getElementById('mrx-s').innerHTML='<span style=color:#94a3b8>'+t+'</span>'; const sb=p=>d.getElementById('mrx-b').style.width=p+'%'; const lg=m=>{const e=d.getElementById('mrx-l');e.innerHTML+='<div>'+new Date().toLocaleTimeString()+' — '+m+'</div>';e.scrollTop=e.scrollHeight;}; ss('Loading audit engine...');sb(5); if(!window.XLSX){await new Promise((res,rej)=>{const s=d.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=rej;d.head.appendChild(s);});} const AUTH='Bearer '+td.access_token,PID=1311,LID=461, DF=FROM+'T07:00:00.000Z',DT=TO+'T23:59:59.000Z'; async function GET(u){const r=await fetch(u,{headers:{Authorization:AUTH,Accept:'application/json'}});if(!r.ok)throw new Error('HTTP '+r.status);return r.json();} async function SRH(st){return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open('POST','/apis/billing/v1/charge-entry/search?page=1&size=500&sort_by=SERVICE_DATE&sort_direction=DESC');x.setRequestHeader('Authorization',AUTH);x.setRequestHeader('Content-Type','application/json');x.onload=()=>{try{res(JSON.parse(x.responseText));}catch(e){rej(e);}};x.onerror=()=>rej(new Error('XHR'));x.send(JSON.stringify({practice_id:PID,rendering_provider_id_list:null,service_date_from:DF,service_date_to:DT,payer_type:null,phase_list:null,excluded_status:[],tags:[],practice_loc_ids:[LID],status:st}));});} async function FS(st,lb){const r=await SRH(st);const c=r.data?.content||r.content?.content||r.content||[];lg(lb+': '+c.length);return c;} try{ ss('Pulling claim data from Spry...');sb(12); const[dr,st2,pe,ni,dn,rj]=await Promise.all([FS(['DRAFT'],'Draft'),FS(['BILL_PENDING','BILL_READY'],'Stuck'),FS(['PENDING_REVIEW'],'Pending'),FS(['NEEDS_INFORMATION','ATTACHMENT_MISSING'],'Needs info'),FS(['PR_DENIED'],'Denied'),FS(['REJECTED'],'Rejected')]); sb(40);ss('Pulling ERAs...'); const fp=await GET('/apis/billing/v1/era?practice_id='+PID+'&page=1&size=50'); const pgs=Math.min(fp.data?.pages||1,30);let eras=fp.data?.content||[]; for(let p=2;p<=pgs;p++){const r=await GET('/apis/billing/v1/era?practice_id='+PID+'&page='+p+'&size=50');eras=eras.concat(r.data?.content||[]);await new Promise(r=>setTimeout(r,80));} lg('ERAs: '+eras.length);sb(65); ss('Building Excel...'); const now=new Date(),mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()]+now.getFullYear(),td2=now.toLocaleDateString(); const dl=n=>n!==undefined?'$'+parseFloat(n||0).toFixed(2):'$0.00'; const sb2=a=>a.reduce((s,c)=>s+(c.total_billed_amt||0),0); const ckm={};eras.forEach(e=>{const cn=(e.check_number||'').trim(),p=(e.payer_name||'').trim().toUpperCase();if(!cn||cn==='0')return;const k=p+'||'+cn;if(!ckm[k])ckm[k]=[];ckm[k].push(e);}); const dups=Object.keys(ckm).filter(k=>ckm[k].length>1).map(k=>{const es=ckm[k],t=es.reduce((s,e)=>s+(e.paid_amount||0),0);return{cn:es[0].check_number,py:es[0].payer_name,ti:es.length,pe:es[0].paid_amount||0,tot:t,ov:t-(es[0].paid_amount||0),dt:es.map(e=>e.paid_date+'(ERA#'+e.id+')').join(' | ')};}).sort((a,b)=>b.ov-a.ov); const gT=eras.reduce((s,e)=>s+(e.paid_amount||0),0); const mM={};eras.forEach(e=>{if(!e.paid_date)return;const m=e.paid_date.slice(0,7);if(!mM[m])mM[m]={c:0,t:0};mM[m].c++;mM[m].t+=(e.paid_amount||0);}); const months=Object.keys(mM).sort(); const bkC={};eras.forEach(e=>{const cn=(e.check_number||'').trim();if(!cn||(e.paid_amount||0)<=0)return;if(!bkC[cn])bkC[cn]={py:e.payer_name,t:0,ds:[],dep:e.deposit_date||''};bkC[cn].t+=(e.paid_amount||0);if(e.paid_date)bkC[cn].ds.push(e.paid_date);}); 
+// ── CONTRACTED RATE TABLE (v5 — from verified contracts + ERA data) ──────────
+const RATES=[
+  // Medrisk — WC Day Rate, confirmed Exhibit 1 signed 04/02/2025
+  {payer:/medrisk/i,plan:'all',visitType:'all',rateType:'flat',expected:80,min:80,max:80,conf:'high',note:'Medrisk Day Rate $80 — WC flat rate per visit'},
+  // UHC / Optum — confirmed by ERA + user
+  {payer:/optum|uhc|united health|unitedhealthcare/i,plan:'all',visitType:'eval',rateType:'flat',expected:68,min:68,max:68,conf:'high',note:'UHC/Optum flat $68/visit confirmed by ERA'},
+  {payer:/optum|uhc|united health|unitedhealthcare/i,plan:'all',visitType:'followup',rateType:'flat',expected:68,min:68,max:68,conf:'high',note:'UHC/Optum flat $68/visit confirmed by ERA'},
+  // ASH / Cigna-administered
+  {payer:/ash|american specialty|cigna.*ash|ash.*cigna/i,plan:'all',visitType:'eval',rateType:'bundled',expected:145.44,min:135,max:145.44,conf:'medium',note:'ASH eval bundled ~$145; ERA-observed'},
+  {payer:/ash|american specialty|cigna.*ash|ash.*cigna/i,plan:'all',visitType:'followup',rateType:'bundled',expected:75,min:75,max:75,conf:'high',note:'ASH follow-up hard cap $75/day confirmed ERA'},
+  // Anthem Blue Cross
+  {payer:/anthem/i,plan:'commercial',visitType:'eval',rateType:'cpt',expected:160,min:160,max:160,conf:'high',note:'Anthem eval observed total $160 — 97161+97140+97112'},
+  {payer:/anthem/i,plan:'commercial',visitType:'followup',rateType:'cpt',expected:80,min:80,max:80,conf:'high',note:'Anthem follow-up observed $80 — 97140 dominant'},
+  // Blue Shield of CA — Exchange/Covered CA
+  {payer:/blue shield.*exchange|covered ca|exchange.*blue shield/i,plan:'exchange',visitType:'eval',rateType:'cpt_mppr',expected:88.39,min:85,max:90,conf:'high',note:'Blue Shield Exchange eval ~$88-90'},
+  {payer:/blue shield.*exchange|covered ca|exchange.*blue shield/i,plan:'exchange',visitType:'followup',rateType:'cpt_mppr',expected:60.87,min:50,max:65,conf:'high',note:'Blue Shield Exchange follow-up $50-65 MPPR'},
+  // Blue Shield Commercial PPO
+  {payer:/blue shield/i,plan:'ppo',visitType:'eval',rateType:'cpt_mppr',expected:126.95,min:126.95,max:126.95,conf:'high',note:'Blue Shield PPO eval observed $126.95'},
+  {payer:/blue shield/i,plan:'ppo',visitType:'followup',rateType:'cpt_mppr',expected:94,min:88,max:100,conf:'medium',note:'Blue Shield PPO follow-up $88-100 MPPR range'},
+  // BCBS Blue Card
+  {payer:/blue card|bcbs|blue cross blue shield/i,plan:'bluecard',visitType:'eval',rateType:'cpt_mppr',expected:126.95,min:126.95,max:126.95,conf:'high',note:'Blue Card eval observed $126.95'},
+  {payer:/blue card|bcbs|blue cross blue shield/i,plan:'bluecard',visitType:'followup',rateType:'cpt_mppr',expected:88.39,min:88.39,max:88.39,conf:'high',note:'Blue Card follow-up $88.39'},
+  // Preferred Therapy Providers / Aetna Commercial
+  {payer:/preferred therapy|aetna/i,plan:'commercial',visitType:'eval',rateType:'cpt',expected:120,min:110,max:130,conf:'medium',note:'Aetna/PTP commercial eval est. $110-130'},
+  {payer:/preferred therapy|aetna/i,plan:'commercial',visitType:'followup',rateType:'cpt',expected:95.54,min:90,max:100,conf:'high',note:'Aetna/PTP commercial follow-up $95.54 confirmed ERA'},
+  // Aetna Medicare Advantage
+  {payer:/preferred therapy|aetna/i,plan:'ma',visitType:'eval',rateType:'cpt',expected:184.96,min:184.96,max:184.96,conf:'high',note:'Aetna MA eval $184.96 confirmed ERA'},
+  {payer:/preferred therapy|aetna/i,plan:'ma',visitType:'followup',rateType:'cpt',expected:100,min:90,max:110,conf:'medium',note:'Aetna MA follow-up est. $90-110'},
+  // Medicare Traditional
+  {payer:/medicare|noridian|cms/i,plan:'traditional',visitType:'eval',rateType:'cpt',expected:177.37,min:175,max:180,conf:'high',note:'Medicare eval $177.37 confirmed ERA'},
+  {payer:/medicare|noridian|cms/i,plan:'traditional',visitType:'followup',rateType:'cpt',expected:85.85,min:85.85,max:90,conf:'high',note:'Medicare follow-up $85.85 confirmed ERA'},
+];
 
+// CPT eval codes — used for charge capture audit
+const EVAL_CPTS=['97161','97162','97163'];
+const REVAL_CPTS=['97164'];
+const TX_CPTS=['97110','97112','97116','97150','97530','97535','97542','97597','97750','97755'];
+
+// ── LAYER 1: paid < allowed (existing, keep) ──────────────────────────────
+// ── LAYER 2: contracted rate comparison ───────────────────────────────────
+function checkContractedRate(claim){
+  const payer=(claim.payer_name||'').trim();
+  const payerType=(claim.payer_type||'').toLowerCase();
+  const paid=parseFloat(claim.total_paid_amt)||0;
+  const allowed=parseFloat(claim.total_allowed_amt)||0;
+  const billed=parseFloat(claim.total_billed_amt)||0;
+  const cpts=String(claim.cpt_codes_billed||'').split(',').map(c=>c.trim());
+  const flags=[];
+
+  // Determine visit type
+  const hasEval=cpts.some(c=>EVAL_CPTS.includes(c));
+  const hasReval=cpts.some(c=>REVAL_CPTS.includes(c));
+  const visitType=hasEval?'eval':hasReval?'reval':'followup';
+
+  // Layer 1: paid < allowed
+  if(allowed>0 && paid<allowed-0.50){
+    const diff=(allowed-paid).toFixed(2);
+    flags.push({layer:1,severity:'HIGH',finding:'Paid less than allowed: paid $'+paid.toFixed(2)+' vs allowed $'+allowed.toFixed(2)+' (diff: $'+diff+')',action:'Check ERA for adjustment codes — may be underpayment or patient responsibility split'});
+  }
+
+  // Layer 2: contracted rate
+  for(const r of RATES){
+    if(!r.payer.test(payer)) continue;
+    if(r.visitType!=='all' && r.visitType!==visitType) continue;
+    const expected=r.expected;
+    const minExp=r.min;
+    const tolerance=0.50; // 50 cent tolerance for rounding
+    const totalReimb=paid+(parseFloat(claim.total_patient_resp_remaining)||0); // paid + pt responsibility
+    if(r.rateType==='flat'){
+      // For flat rates compare total paid directly
+      if(paid<(expected-tolerance)){
+        const diff=(expected-paid).toFixed(2);
+        const sev=r.conf==='high'?'HIGH':r.conf==='medium'?'MEDIUM':'LOW';
+        flags.push({layer:2,severity:sev,finding:'Contracted rate underpayment: paid $'+paid.toFixed(2)+' vs contracted $'+expected.toFixed(2)+' (short $'+diff+'). '+r.note,action:r.conf==='high'?'Appeal — confirmed rate. Request adjustment.':'Review ERA — provisional rate, verify before appeal.'});
+      }
+    } else if(r.rateType==='bundled'){
+      if(paid<(minExp-tolerance)){
+        const diff=(minExp-paid).toFixed(2);
+        const sev=r.conf==='high'?'HIGH':'MEDIUM';
+        flags.push({layer:2,severity:sev,finding:'Bundled rate underpayment: paid $'+paid.toFixed(2)+' vs expected min $'+minExp.toFixed(2)+' (short ~$'+diff+'). '+r.note,action:'Pull ERA from ASHLink to confirm. If confirmed short, request correction.'});
+      }
+    } else if(r.rateType==='cpt'||r.rateType==='cpt_mppr'){
+      // For CPT-based use range — only flag if below minimum
+      if(paid<(minExp-tolerance) && allowed>0){
+        const diff=(minExp-paid).toFixed(2);
+        const sev=r.conf==='high'?'MEDIUM':'LOW'; // lower confidence since CPT mix varies
+        flags.push({layer:2,severity:sev,finding:'Possible CPT underpayment: paid $'+paid.toFixed(2)+' vs expected min $'+minExp.toFixed(2)+' (short ~$'+diff+'). '+r.note+(r.rateType==='cpt_mppr'?' (MPPR applies — verify unit ranking)':''),action:'Compare ERA line items vs contracted CPT rates. Manual review recommended.'});
+      }
+    }
+    break; // use first matching rule
+  }
+
+  return flags;
+}
+
+// ── LAYER 3: charge capture / under-billing ────────────────────────────────
+function checkChargCapture(claim){
+  const flags=[];
+  const cpts=String(claim.cpt_codes_billed||'').split(',').map(c=>c.trim()).filter(Boolean);
+  const apptType=(claim.appointment_type||claim.visit_type||'').toLowerCase();
+  const payer=(claim.payer_name||'').toLowerCase();
+  const units=parseInt(claim.total_units_billed||claim.units||0)||cpts.length;
+  const isMedicare=/medicare|noridian/.test(payer);
+  const isFlatRate=/optum|uhc|united health|medrisk/.test(payer);
+
+  // Rule 1: Evaluation visit — no eval CPT billed
+  const hasEval=cpts.some(c=>EVAL_CPTS.includes(c));
+  const hasReval=cpts.some(c=>REVAL_CPTS.includes(c));
+  const hasTx=cpts.some(c=>TX_CPTS.includes(c));
+  if((apptType.includes('eval')||apptType.includes('initial')||apptType.includes('ie'))&&!hasEval){
+    flags.push({layer:3,severity:'HIGH',finding:'CHARGE CAPTURE: Evaluation visit with no eval CPT billed (97161/97162/97163). Only treatment codes billed: '+cpts.join(', '),action:'Correct billing — add appropriate eval code. Eval codes reimburse $80-185 depending on payer.'});
+  }
+
+  // Rule 2: Re-evaluation visit — no re-eval CPT billed
+  if((apptType.includes('re-eval')||apptType.includes('reeval')||apptType.includes('re eval'))&&!hasReval){
+    flags.push({layer:3,severity:'HIGH',finding:'CHARGE CAPTURE: Re-evaluation visit with no re-eval CPT (97164) billed. Codes billed: '+cpts.join(', '),action:'Add 97164 re-evaluation code. Reimburses ~$78 Medicare, varies by payer.'});
+  }
+
+  // Rule 3: Medicare daily visit — less than 3 units (skip evals and flat-rate payers)
+  if(isMedicare && !hasEval && !hasReval && units>0 && units<3 && hasTx){
+    flags.push({layer:3,severity:'MEDIUM',finding:'CHARGE CAPTURE: Medicare visit billed with only '+units+' unit(s). Medicare pays per unit up to the cap — less than 3 units may be under-billing.',action:'Review treatment notes — if patient received 45+ min of skilled PT, bill 3+ units. Each additional unit adds ~$22-39.'});
+  }
+
+  // Rule 4: Non-Medicare, non-flat-rate payer — less than 4 units
+  if(!isMedicare && !isFlatRate && !hasEval && !hasReval && units>0 && units<4 && hasTx){
+    flags.push({layer:3,severity:'LOW',finding:'CHARGE CAPTURE: Non-Medicare, per-unit payer billed only '+units+' unit(s). If patient received 60+ min, consider billing 4 units.',action:'Review treatment notes — if 4+ units of skilled PT provided, bill accordingly. Increases reimbursement for per-unit payers.'});
+  }
+
+  return flags;
+}
+
+// ── RUN UNDERPAYMENT ENGINE ON CLOSED CLAIMS SAMPLE ───────────────────────
+function runUnderpayEngine(claims){
+  const results=[];
+  for(const c of claims){
+    const contractFlags=checkContractedRate(c);
+    const captureFlags=checkChargCapture(c);
+    const allFlags=[...contractFlags,...captureFlags];
+    if(allFlags.length>0){
+      for(const f of allFlags){
+        results.push({
+          chargeId:c.charge_entry_id,
+          patient:((c.first_name||'')+' '+(c.last_name||'')).trim(),
+          dos:c.service_date,
+          payer:c.payer_name||'',
+          status:c.status||'',
+          paid:parseFloat(c.total_paid_amt||0).toFixed(2),
+          allowed:parseFloat(c.total_allowed_amt||0).toFixed(2),
+          billed:parseFloat(c.total_billed_amt||0).toFixed(2),
+          cpts:c.cpt_codes_billed||'',
+          layer:'Layer '+f.layer,
+          severity:f.severity,
+          finding:f.finding,
+          action:f.action
+        });
+      }
+    }
+  }
+  return results;
+}
+
+
+// Pull a sample of CLOSED claims to run underpayment engine
+ss('Running underpayment analysis...');sb(70);
+let closedClaims=[];
+try{
+  const cr=await SRH(['CLOSED']);
+  closedClaims=(cr.data?.content||cr.content?.content||cr.content||[]).slice(0,300);
+  lg('Closed sample: '+closedClaims.length+' claims for underpayment analysis');
+}catch(e){lg('Closed claims: '+e.message);}
+
+// Also run on denied claims
+const underpayInput=[...closedClaims,...dn,...rj];
+const underpayFlags=runUnderpayEngine(underpayInput);
+const highFlags=underpayFlags.filter(f=>f.severity==='HIGH');
+const medFlags=underpayFlags.filter(f=>f.severity==='MEDIUM');
+const lowFlags=underpayFlags.filter(f=>f.severity==='LOW');
+const l1Flags=underpayFlags.filter(f=>f.layer==='Layer 1');
+const l2Flags=underpayFlags.filter(f=>f.layer==='Layer 2');
+const l3Flags=underpayFlags.filter(f=>f.layer==='Layer 3');
+const totalAtRisk=underpayFlags.filter(f=>f.layer!=='Layer 3').reduce((s,f)=>{
+  const diff=parseFloat(f.allowed||0)-parseFloat(f.paid||0);
+  return s+(diff>0?diff:0);
+},0);
+lg('Underpayment flags: '+underpayFlags.length+' ('+highFlags.length+' HIGH, '+medFlags.length+' MED, '+lowFlags.length+' LOW)');
+sb(80);
+
+const wb=XLSX.utils.book_new(); const H=['Charge ID','Patient','DOS','Payer','Payer Type','Provider','#CPTs','Billed','Allowed','Ins Paid','Pt Resp','Pending','Status','Phase','Days','Finding','Confirmed','Action','Verified']; const CR=(c,f,a)=>[c.charge_entry_id,((c.first_name||'')+' '+(c.last_name||'')).trim(),c.service_date,c.payer_name||'',c.payer_type||'',c.rendering_provider_name||'',c.cpt_codes_billed||'',dl(c.total_billed_amt),dl(c.total_allowed_amt),dl(c.total_paid_amt),dl(c.total_patient_resp_remaining),dl(c.total_pending_balance),c.status||'',c.phase||'',c.status_age!==undefined?c.status_age+' days':'',f,'Y',a,'Spry API '+td2]; XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['MobilityRx Audit — '+mo],[now.toLocaleString()],[''],['CATEGORY','COUNT','$ AT RISK','PRIORITY','ACTION'],['Draft — Never Submitted',dr.length,dl(sb2(dr)),'CRITICAL','Submit now'],['Stuck in Billing',st2.length,dl(sb2(st2)),'CRITICAL','Process queue'],['Pending Review',pe.length,dl(sb2(pe)),'HIGH','Review & submit'],['Needs Information',ni.length,'—','IMMEDIATE','Supply missing info'],['Denied (active)',dn.length,dl(sb2(dn)),'HIGH','Appeal or bill patient'],['Rejected',rj.length,'—','HIGH','Resubmit'],[''],['UNDERPAYMENT ENGINE (v5)','','','',''],['Layer 1 — Paid < Allowed:',l1Flags.length,'','HIGH','Pull ERAs, verify adj codes'],['Layer 2 — Contract Rate Short:',l2Flags.length,'$'+totalAtRisk.toFixed(2),'HIGH','Appeal confirmed shorts'],['Layer 3 — Charge Capture Issues:',l3Flags.length,'','REVIEW','Correct billing codes'],[''],['ERA SUMMARY','','','',''],['Total ERAs:',eras.length,'','',''],['Grand Total Paid:',dl(gT),'','',''],['Duplicate Check #s:',dups.length,'Potential overpost: '+dl(dups.reduce((s,d)=>s+d.ov,0)),'HIGH','Verify vs bank'],[''],['MONTHLY TREND','','','',''],['Month','ERAs','Total Paid','',''],...months.map(m=>[m,mM[m].c,dl(mM[m].t),'',''])]),'SUMMARY'); const mk=(data,name,f,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([H,...data.map(c=>CR(c,f,a))]),name); mk(dr,'Draft-Never-Submitted','DRAFT — never submitted','Submit to payer immediately'); mk(st2,'Stuck-in-Billing','Stuck in billing queue','Process queue and submit'); mk(pe,'Pending-Review','Pending review','Resolve and submit'); mk(ni,'Needs-Information','Missing required info','Supply info and resubmit'); mk([...dn,...rj],'Denied-Rejected','Denied/rejected by payer','Appeal or bill patient'); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['ERA ID','Type','Payer','Provider','Method','Paid Amount','Paid Date','Deposit Date','Check/EFT','Claims','Flag'],...eras.map(e=>[e.id,e.era_type||'',e.payer_name||'',e.provider_name||'',e.payment_method||'',e.paid_amount!==undefined?e.paid_amount:'',e.paid_date||'',e.deposit_date||'',e.check_number||'',e.claim_count||0,(e.paid_amount||0)<0?'RECOUPMENT':(e.paid_amount||0)===0?'ZERO DOLLAR':'' ])]),'All-ERAs'); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Check/EFT','Payer','Times in Spry','Per ERA','Total Posted','Potential Overpost','Dates','Bank Amount','Bank Date','Match','Action'],...dups.map(d=>[d.cn,d.py,d.ti,dl(d.pe),dl(d.tot),dl(d.ov),d.dt,'','','','If deposited once, delete '+(d.ti-1)+' duplicate ERA(s) in Spry.'])]),'Duplicate-Check-Numbers'); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['INSTRUCTIONS: Export bank statement as CSV. For each row enter bank amount in column F. Column I shows variance automatically.'],[''],['Check/EFT Number','Payer (Spry)','Spry Amount','Paid Date','Deposit Date','★ Bank Amount','★ Bank Date','★ Match (Y/N)','Variance','Notes'],...Object.keys(bkC).sort((a,b)=>bkC[b].t-bkC[a].t).map(cn=>[cn,bkC[cn].py,bkC[cn].t,bkC[cn].ds.sort().pop()||'',bkC[cn].dep,'','','','',''])]),'Bank-Reconciliation');
+// Underpayments sheet
+const upHdr=['Charge ID','Patient','DOS','Payer','Status','Paid','Allowed','Billed','CPTs','Layer','Severity','Finding','Action'];
+XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([upHdr,...underpayFlags.map(f=>[f.chargeId,f.patient,f.dos,f.payer,f.status,f.paid,f.allowed,f.billed,f.cpts,f.layer,f.severity,f.finding,f.action])]),'Underpayments');
+ 
+// ── CHARGE REVIEW WORKLIST ─────────────────────────────────────────────────
+// Consolidates ALL flags into one prioritized, sorted, action-ready sheet
+// with direct Spry links, assigned role, deadline warnings, and done checkbox
+
+const SPRY_LINK = (c) => 'https://provider.sprypt.com/billing/' + (c.patient_id||'') + '/billing-detailview/' + (c.charge_entry_id||c.chargeId||'') + '/charges?source=Billing&redirectTo=%2Fbilling';
+
+// Priority order for sorting
+const PRI_ORDER = { 'CRITICAL': 0, 'IMMEDIATE': 1, 'HIGH': 2, 'MEDIUM': 3, 'LOW': 4, 'REVIEW': 5 };
+const ACT_ORDER = { 'Submit Now': 0, 'Process Queue': 1, 'Appeal': 2, 'Fix Billing': 3, 'Supply Info': 4, 'Resubmit': 5, 'Review': 6 };
+
+// Build worklist rows from all flag sources
+const wlRows = [];
+
+// Helper: days since service date
+const daysSince = dos => {
+  if (!dos) return 0;
+  return Math.round((new Date() - new Date(dos)) / 86400000);
+};
+
+// Helper: timely filing warning (most payers = 365 days, Medicare = 365)
+const timelyWarn = days => days > 300 ? '⚠ TIMELY FILING RISK' : days > 180 ? '⚠ Getting old' : '';
+
+// Helper: assigned role
+const assignRole = (actionType, layer) => {
+  if (actionType === 'Submit Now' || actionType === 'Process Queue') return 'Biller';
+  if (actionType === 'Fix Billing') return 'Therapist + Biller';
+  if (actionType === 'Appeal') return 'Biller';
+  if (actionType === 'Supply Info') return 'Therapist + Biller';
+  if (layer === 'Layer 3') return 'Therapist + Biller';
+  return 'Biller';
+};
+
+// 1. Draft claims
+dr.forEach(c => {
+  const days = daysSince(c.service_date);
+  wlRows.push({
+    priority: 'CRITICAL',
+    actionType: 'Submit Now',
+    dollarRisk: parseFloat(c.total_billed_amt || 0),
+    chargeId: c.charge_entry_id,
+    spryLink: SPRY_LINK(c),
+    patient: ((c.first_name||'')+' '+(c.last_name||'')).trim(),
+    dos: c.service_date,
+    payer: c.payer_name || '',
+    provider: c.rendering_provider_name || '',
+    cpts: c.cpt_codes_billed || '',
+    status: 'DRAFT',
+    finding: 'Never submitted to insurance — $' + parseFloat(c.total_billed_amt||0).toFixed(2) + ' unbilled',
+    action: 'Open in Spry → verify CPTs → Submit to payer',
+    role: 'Biller',
+    daysOld: days,
+    deadline: timelyWarn(days),
+    layer: 'Submission',
+    done: ''
+  });
+});
+
+// 2. Stuck in billing
+st2.forEach(c => {
+  const days = daysSince(c.service_date);
+  wlRows.push({
+    priority: 'CRITICAL',
+    actionType: 'Process Queue',
+    dollarRisk: parseFloat(c.total_billed_amt || 0),
+    chargeId: c.charge_entry_id,
+    spryLink: SPRY_LINK(c),
+    patient: ((c.first_name||'')+' '+(c.last_name||'')).trim(),
+    dos: c.service_date,
+    payer: c.payer_name || '',
+    provider: c.rendering_provider_name || '',
+    cpts: c.cpt_codes_billed || '',
+    status: c.status || '',
+    finding: 'Ready to bill but sitting idle — $' + parseFloat(c.total_billed_amt||0).toFixed(2) + ' pending',
+    action: c.status === 'BILL_READY' ? 'Submit immediately — no further prep needed' : 'Resolve billing error then submit',
+    role: 'Biller',
+    daysOld: days,
+    deadline: timelyWarn(days),
+    layer: 'Submission',
+    done: ''
+  });
+});
+
+// 3. Needs information
+ni.forEach(c => {
+  const days = daysSince(c.service_date);
+  wlRows.push({
+    priority: 'IMMEDIATE',
+    actionType: 'Supply Info',
+    dollarRisk: parseFloat(c.total_billed_amt || 0),
+    chargeId: c.charge_entry_id,
+    spryLink: SPRY_LINK(c),
+    patient: ((c.first_name||'')+' '+(c.last_name||'')).trim(),
+    dos: c.service_date,
+    payer: c.payer_name || '',
+    provider: c.rendering_provider_name || '',
+    cpts: c.cpt_codes_billed || '',
+    status: c.status || '',
+    finding: 'Missing required information blocking submission',
+    action: 'Open in Spry → supply missing info → resubmit',
+    role: 'Therapist + Biller',
+    daysOld: days,
+    deadline: timelyWarn(days),
+    layer: 'Submission',
+    done: ''
+  });
+});
+
+// 4. Denied / rejected
+[...dn, ...rj].forEach(c => {
+  const days = daysSince(c.service_date);
+  wlRows.push({
+    priority: 'HIGH',
+    actionType: 'Appeal',
+    dollarRisk: parseFloat(c.total_billed_amt || 0),
+    chargeId: c.charge_entry_id,
+    spryLink: SPRY_LINK(c),
+    patient: ((c.first_name||'')+' '+(c.last_name||'')).trim(),
+    dos: c.service_date,
+    payer: c.payer_name || '',
+    provider: c.rendering_provider_name || '',
+    cpts: c.cpt_codes_billed || '',
+    status: c.status || '',
+    finding: (c.status === 'REJECTED' ? 'REJECTED' : 'DENIED') + ' — $' + parseFloat(c.total_billed_amt||0).toFixed(2) + ' at risk',
+    action: 'Pull ERA → read denial code → appeal or bill patient',
+    role: 'Biller',
+    daysOld: days,
+    deadline: timelyWarn(days),
+    layer: 'Denial',
+    done: ''
+  });
+});
+
+// 5. Underpayment flags (Layer 2 HIGH only for worklist — don't overwhelm)
+underpayFlags.filter(f => f.severity === 'HIGH' && f.layer === 'Layer 2').forEach(f => {
+  const diff = (parseFloat(f.allowed||0) - parseFloat(f.paid||0));
+  wlRows.push({
+    priority: 'HIGH',
+    actionType: 'Appeal',
+    dollarRisk: diff > 0 ? diff : parseFloat(f.billed||0),
+    chargeId: f.chargeId,
+    spryLink: SPRY_LINK({patient_id: f.patientId||"", charge_entry_id: f.chargeId}),
+    patient: f.patient,
+    dos: f.dos,
+    payer: f.payer,
+    provider: '',
+    cpts: f.cpts,
+    status: f.status,
+    finding: f.finding,
+    action: f.action,
+    role: 'Biller',
+    daysOld: daysSince(f.dos),
+    deadline: timelyWarn(daysSince(f.dos)),
+    layer: 'Underpayment',
+    done: ''
+  });
+});
+
+// 6. Charge capture issues (Layer 3 HIGH only)
+underpayFlags.filter(f => f.severity === 'HIGH' && f.layer === 'Layer 3').forEach(f => {
+  wlRows.push({
+    priority: 'HIGH',
+    actionType: 'Fix Billing',
+    dollarRisk: 0,
+    chargeId: f.chargeId,
+    spryLink: SPRY_LINK({patient_id: f.patientId||"", charge_entry_id: f.chargeId}),
+    patient: f.patient,
+    dos: f.dos,
+    payer: f.payer,
+    provider: '',
+    cpts: f.cpts,
+    status: f.status,
+    finding: f.finding,
+    action: f.action,
+    role: 'Therapist + Biller',
+    daysOld: daysSince(f.dos),
+    deadline: timelyWarn(daysSince(f.dos)),
+    layer: 'Charge Capture',
+    done: ''
+  });
+});
+
+// Sort: priority first, then action type, then dollar risk descending
+wlRows.sort((a, b) => {
+  const pd = (PRI_ORDER[a.priority]||9) - (PRI_ORDER[b.priority]||9);
+  if (pd !== 0) return pd;
+  const ad = (ACT_ORDER[a.actionType]||9) - (ACT_ORDER[b.actionType]||9);
+  if (ad !== 0) return ad;
+  return b.dollarRisk - a.dollarRisk;
+});
+
+// Add rank numbers
+wlRows.forEach((r, i) => { r.rank = i + 1; });
+
+// Build sheet
+const wlHdr = [
+  '#', 'Priority', 'Action', '$ At Risk', 'Charge ID', 'Open in Spry',
+  'Patient', 'DOS', 'Days Old', 'Deadline Warning', 'Payer', 'Provider',
+  'CPTs', 'Status', 'Layer', 'Finding', 'Billing Team Action', 'Who Acts', '✓ Done'
+];
+const wlData = wlRows.map(r => [
+  r.rank, r.priority, r.actionType,
+  r.dollarRisk > 0 ? parseFloat(r.dollarRisk).toFixed(2) : '—',
+  r.chargeId, r.spryLink,
+  r.patient, r.dos, r.daysOld, r.deadline || '',
+  r.payer, r.provider, r.cpts, r.status, r.layer,
+  r.finding, r.action, r.role, ''
+]);
+
+const wlSheet = XLSX.utils.aoa_to_sheet([wlHdr, ...wlData]);
+
+// Column widths
+wlSheet['!cols'] = [
+  {wch:4},{wch:10},{wch:14},{wch:10},{wch:12},{wch:50},
+  {wch:20},{wch:12},{wch:8},{wch:20},{wch:22},{wch:18},
+  {wch:20},{wch:12},{wch:14},{wch:50},{wch:45},{wch:18},{wch:8}
+];
+
+// Insert as FIRST sheet so it opens by default
+XLSX.utils.book_append_sheet(wb, wlSheet, 'Charge-Review-Worklist');
+
+// Move it to position 0
+const sheets = wb.SheetNames;
+sheets.splice(sheets.indexOf('Charge-Review-Worklist'), 1);
+sheets.unshift('Charge-Review-Worklist');
+
+sb(95);ss('Downloading...'); const out=XLSX.write(wb,{bookType:'xlsx',type:'binary'}); const buf=new ArrayBuffer(out.length);const v=new Uint8Array(buf); for(let i=0;i<out.length;i++)v[i]=out.charCodeAt(i)&0xFF; const blob=new Blob([buf],{type:'application/octet-stream'}); const a=d.createElement('a');a.href=URL.createObjectURL(blob);a.download='MobilityRx_Audit_'+mo+'.xlsx';d.body.appendChild(a);a.click();d.body.removeChild(a); sb(100);d.getElementById('mrx-s').innerHTML='<span style=color:#00ff88;font-size:15px>✓ Downloaded: MobilityRx_Audit_'+mo+'.xlsx</span>'; d.getElementById('mrx-l').innerHTML+='<div style=color:#00ff88;margin-top:8px>Draft:'+dr.length+' Stuck:'+st2.length+' Pending:'+pe.length+' ERAs:'+eras.length+'</div>'; setTimeout(()=>{const o=d.getElementById('mrx-ov');if(o)o.remove();},6000); }catch(err){d.getElementById('mrx-s').innerHTML='<span style=color:#ff4444>✗ Error: '+err.message+'</span>';console.error(err);} });})();
