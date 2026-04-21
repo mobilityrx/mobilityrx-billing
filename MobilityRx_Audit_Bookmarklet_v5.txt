@@ -55,10 +55,14 @@ function checkContractedRate(claim){
   const hasReval=cpts.some(c=>REVAL_CPTS.includes(c));
   const visitType=hasEval?'eval':hasReval?'reval':'followup';
 
-  // Layer 1: paid < allowed
-  if(allowed>0 && paid<allowed-0.50){
-    const diff=(allowed-paid).toFixed(2);
-    flags.push({layer:1,severity:'HIGH',finding:'Paid less than allowed: paid $'+paid.toFixed(2)+' vs allowed $'+allowed.toFixed(2)+' (diff: $'+diff+')',action:'Check ERA for adjustment codes — may be underpayment or patient responsibility split'});
+  // Layer 1: (ins paid + pt paid) < allowed
+  const ptPaidAmt = parseFloat(claim.total_patient_paid_amt||0);
+  const totalColl = paid + ptPaidAmt;
+  const ptRespAmt = parseFloat(claim.total_patient_resp_remaining||0);
+  if(allowed>0 && totalColl<allowed-0.50 && ptRespAmt<0.50){
+    // Only flag if patient responsibility is also zeroed out — meaning no more expected from patient
+    const diff=(allowed-totalColl).toFixed(2);
+    flags.push({layer:1,severity:'HIGH',finding:'Under-collected: ins paid $'+paid.toFixed(2)+' + pt paid $'+ptPaidAmt.toFixed(2)+' = $'+totalColl.toFixed(2)+' vs allowed $'+allowed.toFixed(2)+' (short $'+diff+'). Patient balance is $0.',action:'Pull ERA — check adjustment codes. May be insurance underpayment.'});
   }
 
   // Layer 2: contracted rate
@@ -141,25 +145,33 @@ function runUnderpayEngine(claims){
     const allFlags=[...contractFlags,...captureFlags];
     if(allFlags.length>0){
       for(const f of allFlags){
-        const ptPaid = parseFloat(c.total_patient_paid_amt||0);
+        // Spry field definitions:
+        // total_paid_amt = insurance payment only
+        // total_patient_paid_amt = patient has already paid
+        // total_patient_resp_remaining = patient still owes (not yet collected)
+        // total_allowed_amt = payer allowed amount
+        // Total collected = ins paid + pt paid
+        // Variance = allowed - (ins paid + pt paid) — positive = still owed, negative = overpaid
         const insPaid = parseFloat(c.total_paid_amt||0);
+        const ptPaid = parseFloat(c.total_patient_paid_amt||0);
         const ptResp = parseFloat(c.total_patient_resp_remaining||0);
         const totalCollected = insPaid + ptPaid;
         const allowedAmt = parseFloat(c.total_allowed_amt||0);
+        const variance = allowedAmt - totalCollected; // positive = under-collected
         results.push({
           chargeId:c.charge_entry_id,
           patient:((c.first_name||'')+' '+(c.last_name||'')).trim(),
           dos:c.service_date,
           payer:c.payer_name||'',
           status:c.status||'',
-          paid:insPaid.toFixed(2),
+          insPaid:insPaid.toFixed(2),
           ptPaid:ptPaid.toFixed(2),
           ptResp:ptResp.toFixed(2),
           totalCollected:totalCollected.toFixed(2),
           allowed:allowedAmt.toFixed(2),
-          variance:(totalCollected - allowedAmt).toFixed(2),
+          variance:variance.toFixed(2),
           billed:parseFloat(c.total_billed_amt||0).toFixed(2),
-          cpts:c.cpt_codes_billed||'',
+          cpts:String(c.cpt_codes_billed||''),
           layer:'Layer '+f.layer,
           severity:f.severity,
           finding:f.finding,
@@ -199,8 +211,8 @@ sb(80);
 
 const wb=XLSX.utils.book_new(); const H=['Charge ID','Open in Spry','Patient','DOS','Payer','Payer Type','Provider','#CPTs','Billed','Allowed','Ins Paid','Pt Resp','Pending','Status','Phase','Days','Finding','Confirmed','Action','Verified']; const CR=(c,f,a)=>[c.charge_entry_id,'https://provider.sprypt.com/billing/'+(c.patient_id||'')+ '/billing-detailview/'+c.charge_entry_id+'/charges?source=Billing&redirectTo=%2Fbilling',((c.first_name||'')+' '+(c.last_name||'')).trim(),c.service_date,c.payer_name||'',c.payer_type||'',c.rendering_provider_name||'',c.cpt_codes_billed||'',dl(c.total_billed_amt),dl(c.total_allowed_amt),dl(c.total_paid_amt),dl(c.total_patient_resp_remaining),dl(c.total_pending_balance),c.status||'',c.phase||'',c.status_age!==undefined?c.status_age+' days':'',f,'Y',a,'Spry API '+td2]; XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['MobilityRx Audit — '+mo],[now.toLocaleString()],[''],['CATEGORY','COUNT','$ AT RISK','PRIORITY','ACTION'],['Draft — Never Submitted',dr.length,dl(sb2(dr)),'CRITICAL','Submit now'],['Stuck in Billing',st2.length,dl(sb2(st2)),'CRITICAL','Process queue'],['Pending Review',pe.length,dl(sb2(pe)),'HIGH','Review & submit'],['Needs Information',ni.length,'—','IMMEDIATE','Supply missing info'],['Denied (active)',dn.length,dl(sb2(dn)),'HIGH','Appeal or bill patient'],['Rejected',rj.length,'—','HIGH','Resubmit'],[''],['UNDERPAYMENT ENGINE (v5)','','','',''],['Layer 1 — Paid < Allowed:',l1Flags.length,'','HIGH','Pull ERAs, verify adj codes'],['Layer 2 — Contract Rate Short:',l2Flags.length,'$'+totalAtRisk.toFixed(2),'HIGH','Appeal confirmed shorts'],['Layer 3 — Charge Capture Issues:',l3Flags.length,'','REVIEW','Correct billing codes'],[''],['ERA SUMMARY','','','',''],['Total ERAs:',eras.length,'','',''],['Grand Total Paid:',dl(gT),'','',''],['Duplicate Check #s:',dups.length,'Potential overpost: '+dl(dups.reduce((s,d)=>s+d.ov,0)),'HIGH','Verify vs bank'],[''],['MONTHLY TREND','','','',''],['Month','ERAs','Total Paid','',''],...months.map(m=>[m,mM[m].c,dl(mM[m].t),'',''])]),'SUMMARY'); const mk=(data,name,f,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([H,...data.map(c=>CR(c,f,a))]),name); mk(dr,'Draft-Never-Submitted','DRAFT — never submitted','Submit to payer immediately'); mk(st2,'Stuck-in-Billing','Stuck in billing queue','Process queue and submit'); mk(pe,'Pending-Review','Pending review','Resolve and submit'); mk(ni,'Needs-Information','Missing required info','Supply info and resubmit'); mk([...dn,...rj],'Denied-Rejected','Denied/rejected by payer','Appeal or bill patient'); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['ERA ID','Type','Payer','Provider','Method','Paid Amount','Paid Date','Deposit Date','Check/EFT','Claims','Flag'],...eras.map(e=>[e.id,e.era_type||'',e.payer_name||'',e.provider_name||'',e.payment_method||'',e.paid_amount!==undefined?e.paid_amount:'',e.paid_date||'',e.deposit_date||'',e.check_number||'',e.claim_count||0,(e.paid_amount||0)<0?'RECOUPMENT':(e.paid_amount||0)===0?'ZERO DOLLAR':'' ])]),'All-ERAs'); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Check/EFT','Payer','Times in Spry','Per ERA','Total Posted','Potential Overpost','Dates','Bank Amount','Bank Date','Match','Action'],...dups.map(d=>[d.cn,d.py,d.ti,dl(d.pe),dl(d.tot),dl(d.ov),d.dt,'','','','If deposited once, delete '+(d.ti-1)+' duplicate ERA(s) in Spry.'])]),'Duplicate-Check-Numbers'); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['INSTRUCTIONS: Export bank statement as CSV. For each row enter bank amount in column F. Column I shows variance automatically.'],[''],['Check/EFT Number','Payer (Spry)','Spry Amount','Paid Date','Deposit Date','★ Bank Amount','★ Bank Date','★ Match (Y/N)','Variance','Notes'],...Object.keys(bkC).sort((a,b)=>bkC[b].t-bkC[a].t).map(cn=>[cn,bkC[cn].py,bkC[cn].t,bkC[cn].ds.sort().pop()||'',bkC[cn].dep,'','','','',''])]),'Bank-Reconciliation');
 // Underpayments sheet
-const upHdr=['Charge ID','Patient','DOS','Payer','Status','Ins Paid','Pt Paid','Pt Resp Remaining','Total Collected','Allowed','Variance (Collected-Allowed)','Billed','CPTs','Layer','Severity','Finding','Action'];
-XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([upHdr,...underpayFlags.map(f=>[f.chargeId,f.patient,f.dos,f.payer,f.status,f.paid,f.ptPaid||'0.00',f.ptResp||'0.00',f.totalCollected||f.paid,f.allowed,f.variance||'',f.billed,f.cpts,f.layer,f.severity,f.finding,f.action])]),'Underpayments');
+const upHdr=['Charge ID','Patient','DOS','Payer','Status','Ins Paid','Pt Paid','Pt Resp Remaining','Total Collected','Allowed','Variance (Allowed-Collected)','Billed','CPTs','Layer','Severity','Finding','Action'];
+XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([upHdr,...underpayFlags.map(f=>[f.chargeId,f.patient,f.dos,f.payer,f.status,f.insPaid||f.paid,f.ptPaid||'0.00',f.ptResp||'0.00',f.totalCollected||f.insPaid||f.paid,f.allowed,f.variance||'',f.billed,f.cpts,f.layer,f.severity,f.finding,f.action])]),'Underpayments');
  
 // ── CHARGE REVIEW WORKLIST ─────────────────────────────────────────────────
 // Consolidates ALL flags into one prioritized, sorted, action-ready sheet
