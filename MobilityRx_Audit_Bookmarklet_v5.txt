@@ -55,14 +55,15 @@ function checkContractedRate(claim){
   const hasReval=cpts.some(c=>REVAL_CPTS.includes(c));
   const visitType=hasEval?'eval':hasReval?'reval':'followup';
 
-  // Layer 1: (ins paid + pt paid) < allowed
-  const ptPaidAmt = parseFloat(claim.total_patient_paid_amt||0);
-  const totalColl = paid + ptPaidAmt;
+  // Layer 1: total_paid_amt (ins+pt combined) < allowed
+  // Only flag when patient balance is $0 — meaning nothing more expected from patient
+  const totalColl = parseFloat(claim.total_paid_amt||0); // ins+pt combined
   const ptRespAmt = parseFloat(claim.total_patient_resp_remaining||0);
   if(allowed>0 && totalColl<allowed-0.50 && ptRespAmt<0.50){
-    // Only flag if patient responsibility is also zeroed out — meaning no more expected from patient
+    const insPaidAmt = parseFloat(claim.total_ins_paid_amt||0);
+    const ptPaidAmt = parseFloat(claim.total_patient_paid_amt||0);
     const diff=(allowed-totalColl).toFixed(2);
-    flags.push({layer:1,severity:'HIGH',finding:'Under-collected: ins paid $'+paid.toFixed(2)+' + pt paid $'+ptPaidAmt.toFixed(2)+' = $'+totalColl.toFixed(2)+' vs allowed $'+allowed.toFixed(2)+' (short $'+diff+'). Patient balance is $0.',action:'Pull ERA — check adjustment codes. May be insurance underpayment.'});
+    flags.push({layer:1,severity:'HIGH',finding:'Under-collected: ins $'+insPaidAmt.toFixed(2)+' + pt $'+ptPaidAmt.toFixed(2)+' = $'+totalColl.toFixed(2)+' vs allowed $'+allowed.toFixed(2)+' (short $'+diff+'). Patient balance $0 — check ERA adjustment codes.',action:'Pull ERA — verify adjustment codes. If CO-45 does not account for full difference, may be insurance underpayment.'});
   }
 
   // Layer 2: contracted rate
@@ -145,17 +146,17 @@ function runUnderpayEngine(claims){
     const allFlags=[...contractFlags,...captureFlags];
     if(allFlags.length>0){
       for(const f of allFlags){
-        // Spry field definitions:
-        // total_paid_amt = insurance payment only
-        // total_patient_paid_amt = patient has already paid
-        // total_patient_resp_remaining = patient still owes (not yet collected)
+        // Spry field definitions (confirmed from API):
+        // total_paid_amt = ins + pt combined total collected
+        // total_ins_paid_amt = insurance portion only
+        // total_patient_paid_amt = patient portion already paid
+        // total_patient_resp_remaining = patient still owes
         // total_allowed_amt = payer allowed amount
-        // Total collected = ins paid + pt paid
-        // Variance = allowed - (ins paid + pt paid) — positive = still owed, negative = overpaid
-        const insPaid = parseFloat(c.total_paid_amt||0);
+        // Variance = allowed - total_paid_amt (positive = short)
+        const insPaid = parseFloat(c.total_ins_paid_amt||0);
         const ptPaid = parseFloat(c.total_patient_paid_amt||0);
         const ptResp = parseFloat(c.total_patient_resp_remaining||0);
-        const totalCollected = insPaid + ptPaid;
+        const totalCollected = parseFloat(c.total_paid_amt||0); // combined ins+pt
         const allowedAmt = parseFloat(c.total_allowed_amt||0);
         const variance = allowedAmt - totalCollected; // positive = under-collected
         results.push({
